@@ -57,18 +57,16 @@ users:
     enabled: true
     clientRoles:
       realm-management:
-        - manage-groups
-        - view-groups
+        - manage-users
+        - view-users
 
 smtpServer:
-  host: ""
-  port: ""
-  from: ""
-  fromDisplayName: ""
-  replyTo: ""
-  replyToDisplayName: ""
-  ssl: ""
-  starttls: ""
-  auth: ""
-  user: ""
-  password: ""
+  host: $(SMTP_SERVER_URL)
+  port: $(SMTP_SERVER_PORT)
+  from: $(NO_REPLY_MAIL)
+  fromDisplayName: "No Reply GENCHA"
+  auth: true
+  user: $(SMTP_USER)
+  password: $(SMTP_USER_PASSWORD)
+  starttls: false
+  ssl: true
