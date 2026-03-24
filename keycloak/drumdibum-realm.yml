@@ -1,10 +1,13 @@
 realm: drumdibum
 enabled: true
 displayName: Drumdibum
+#general settings
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
-registrationAllowed: true
+registrationAllowed: false
 resetPasswordAllowed: true
+verifyEmail: true
+loginTheme: keycloakify-starter
 
 roles:
   realm:
