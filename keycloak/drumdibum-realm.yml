@@ -4,7 +4,7 @@ displayName: Drumdibum
 #general settings
 loginWithEmailAllowed: true
 duplicateEmailsAllowed: false
-registrationAllowed: false
+registrationAllowed: true
 resetPasswordAllowed: true
 verifyEmail: true
 loginTheme: keycloakify-starter
