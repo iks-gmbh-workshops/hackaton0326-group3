@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/backend/backend.iml" filepath="$PROJECT_DIR$/.idea/backend/backend.iml" />
       <module fileurl="file://$PROJECT_DIR$/drumdibum-team-c.iml" filepath="$PROJECT_DIR$/drumdibum-team-c.iml" />
-      <module fileurl="file://$PROJECT_DIR$/frontend/frontend.iml" filepath="$PROJECT_DIR$/frontend/frontend.iml" />
+      <module fileurl="file://$PROJECT_DIR$/frontend-app/frontend-app.iml" filepath="$PROJECT_DIR$/frontend-app/frontend-app.iml" />
     </modules>
   </component>
 </project>
