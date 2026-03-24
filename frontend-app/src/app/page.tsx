@@ -6,7 +6,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Users, CalendarDays, Mail, ArrowRight } from "lucide-react";
 
 export default function Home() {
-  const { isLoggedIn, login } = useAuth();
+  const { isLoggedIn, isLoading, login } = useAuth();
 
   return (
     <div className="flex flex-col">
@@ -27,7 +27,13 @@ export default function Home() {
               <ArrowRight className="ml-1 size-4" />
             </Link>
           ) : (
-            <Button size="lg" onClick={login}>
+            <Button
+              size="lg"
+              disabled={isLoading}
+              onClick={() => {
+                void login();
+              }}
+            >
               Get Started
               <ArrowRight className="ml-1 size-4" />
             </Button>

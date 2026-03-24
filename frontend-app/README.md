@@ -1,33 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is the Drumdibum frontend built with [Next.js](https://nextjs.org).
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Keycloak Configuration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The frontend uses `keycloak-js` and expects these public environment variables:
 
-## Learn More
+```bash
+NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
+NEXT_PUBLIC_KEYCLOAK_REALM=drumdibum
+NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=drumdibum-frontend
+```
 
-To learn more about Next.js, take a look at the following resources:
+If these are not set, the defaults above are used.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+With the repository's `docker-compose.yml` and `keycloak/drumdibum-realm.yml`, the matching Keycloak client is already defined:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Realm: `drumdibum`
+- Public client: `drumdibum-frontend`
+- Redirect URI: `http://localhost:3000/*`
+
+Run from the repository root to start Keycloak + Postgres:
+
+```bash
+docker compose up -d
+```
+
+Then start this frontend and use the Login button in the navbar.
+
+## Notes
+
+- Auth state is initialized with Keycloak `check-sso`.
+- Login/logout are handled by Keycloak redirects.
+- Access token is available in `useAuth()` as `accessToken` for API calls.
 
 ## Deploy on Vercel
 

@@ -25,7 +25,7 @@ function getInitials(name: string) {
 }
 
 export function Navbar() {
-  const { user, isLoggedIn, login, logout } = useAuth();
+  const { user, isLoggedIn, isLoading, login, logout } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const unreadCount = mockNotifications.filter((n) => !n.read).length;
 
@@ -104,7 +104,11 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      void logout();
+                    }}
+                  >
                     <LogOut className="mr-2 size-4" />
                     Logout
                   </DropdownMenuItem>
@@ -112,8 +116,14 @@ export function Navbar() {
               </DropdownMenu>
             </>
           ) : (
-            <Button size="sm" onClick={login}>
-              Login
+            <Button
+              size="sm"
+              disabled={isLoading}
+              onClick={() => {
+                void login();
+              }}
+            >
+              {isLoading ? "Loading..." : "Login"}
             </Button>
           )}
         </nav>
@@ -158,7 +168,7 @@ export function Navbar() {
               <button
                 className="rounded-md px-3 py-2 text-left text-sm text-destructive hover:bg-muted"
                 onClick={() => {
-                  logout();
+                  void logout();
                   setMobileOpen(false);
                 }}
               >
@@ -166,8 +176,14 @@ export function Navbar() {
               </button>
             </>
           ) : (
-            <Button size="sm" onClick={login}>
-              Login
+            <Button
+              size="sm"
+              disabled={isLoading}
+              onClick={() => {
+                void login();
+              }}
+            >
+              {isLoading ? "Loading..." : "Login"}
             </Button>
           )}
         </nav>

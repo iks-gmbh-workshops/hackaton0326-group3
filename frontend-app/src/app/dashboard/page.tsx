@@ -9,7 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, CalendarDays, Plus, MapPin, Clock } from "lucide-react";
 
 export default function DashboardPage() {
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
     return (

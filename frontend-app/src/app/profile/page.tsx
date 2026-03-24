@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { User, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import type { User } from "@/lib/types";
 
 function getInitials(name: string) {
   return name
@@ -20,10 +21,15 @@ function getInitials(name: string) {
 }
 
 export default function ProfilePage() {
-  const { user, isLoggedIn } = useAuth();
-  const [name, setName] = useState(user?.name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [saving, setSaving] = useState(false);
+  const { user, isLoggedIn, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
 
   if (!isLoggedIn || !user) {
     return (
@@ -32,6 +38,14 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  return <ProfileContent key={user.id} user={user} />;
+}
+
+function ProfileContent({ user }: { user: User }) {
+  const [name, setName] = useState(user.name);
+  const [email, setEmail] = useState(user.email);
+  const [saving, setSaving] = useState(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
