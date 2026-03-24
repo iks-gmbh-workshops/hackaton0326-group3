@@ -6,3 +6,4 @@ CREATE TABLE IF NOT EXISTS app_group (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_app_group_name_lower ON app_group ((LOWER(name)));
+

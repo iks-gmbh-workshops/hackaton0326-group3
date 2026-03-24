@@ -1,10 +1,16 @@
 package com.iks.backend.group;
 
+import java.util.List;
+import java.util.Optional;
+
 import com.iks.backend.group.persistence.AppGroup;
 import com.iks.backend.group.persistence.AppGroupRepository;
 import com.iks.backend.keycloak.KeycloakService;
+import com.iks.backend.user.UserLookupResult;
 
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +47,33 @@ public class GroupService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<AppGroup> listGroups() {
+        return appGroupRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
+    }
+
+    @Transactional(readOnly = true)
+    public AppGroup getGroup(String groupId) {
+        return appGroupRepository.findById(groupId)
+            .orElseThrow(() -> new GroupNotFoundException(groupId));
+    }
+
+    @Transactional(readOnly = true)
+    public void addUserToGroup(String groupId, String rawUserId) {
+        getGroup(groupId);
+        String userId = normalizeUserId(rawUserId);
+        keycloakService.addUserToGroup(userId, groupId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserLookupResult> listGroupMembers(String groupId) {
+        getGroup(groupId);
+        return keycloakService.listGroupMembers(groupId).stream()
+            .map(GroupService::mapUser)
+            .flatMap(Optional::stream)
+            .toList();
+    }
+
     private void rollbackKeycloakGroup(String groupId, RuntimeException originalFailure) {
         try {
             keycloakService.deleteGroup(groupId);
@@ -62,5 +95,65 @@ public class GroupService {
             throw new InvalidGroupRequestException("Group name must be at most 255 characters");
         }
         return groupName;
+    }
+
+    private static String normalizeUserId(String rawUserId) {
+        if (rawUserId == null) {
+            throw new InvalidGroupMemberRequestException("User id is required");
+        }
+
+        String userId = rawUserId.trim();
+        if (userId.isEmpty()) {
+            throw new InvalidGroupMemberRequestException("User id must not be blank");
+        }
+        return userId;
+    }
+
+    private static Optional<UserLookupResult> mapUser(UserRepresentation userRepresentation) {
+        String id = firstNonBlank(userRepresentation.getId());
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        String email = firstNonBlank(userRepresentation.getEmail(), userRepresentation.getUsername());
+        if (email == null) {
+            return Optional.empty();
+        }
+
+        String fullName = firstNonBlank(
+            joinName(userRepresentation.getFirstName(), userRepresentation.getLastName()),
+            userRepresentation.getUsername(),
+            email
+        );
+
+        return Optional.of(new UserLookupResult(id, fullName, email));
+    }
+
+    private static String joinName(String firstName, String lastName) {
+        String normalizedFirstName = firstNonBlank(firstName);
+        String normalizedLastName = firstNonBlank(lastName);
+
+        if (normalizedFirstName == null && normalizedLastName == null) {
+            return "";
+        }
+        if (normalizedFirstName == null) {
+            return normalizedLastName;
+        }
+        if (normalizedLastName == null) {
+            return normalizedFirstName;
+        }
+        return normalizedFirstName + " " + normalizedLastName;
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null) {
+                String trimmed = value.trim();
+                if (!trimmed.isEmpty()) {
+                    return trimmed;
+                }
+            }
+        }
+        return null;
     }
 }
