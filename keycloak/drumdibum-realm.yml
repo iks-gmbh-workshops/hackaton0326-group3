@@ -52,6 +52,14 @@ clients:
     secret: $(DRUMDIBUM_BACKEND_CLIENT_SECRET)
     attributes: {}
 
+users:
+  - username: service-account-drumdibum-backend
+    enabled: true
+    clientRoles:
+      realm-management:
+        - manage-groups
+        - view-groups
+
 smtpServer:
   host: ""
   port: ""
