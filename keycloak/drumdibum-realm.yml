@@ -1,6 +1,10 @@
 realm: drumdibum
 enabled: true
 displayName: Drumdibum
+loginWithEmailAllowed: true
+duplicateEmailsAllowed: false
+registrationAllowed: true
+resetPasswordAllowed: true
 
 roles:
   realm:
