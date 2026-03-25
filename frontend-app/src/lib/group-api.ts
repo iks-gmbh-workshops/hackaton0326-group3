@@ -60,6 +60,10 @@ export async function listGroups(token: string) {
   return request<BackendGroup[]>("/api/groups", token);
 }
 
+export async function listMyGroups(token: string) {
+  return request<BackendGroup[]>("/api/groups/my", token);
+}
+
 export async function getGroup(token: string, groupId: string) {
   return request<BackendGroup>(`/api/groups/${groupId}`, token);
 }

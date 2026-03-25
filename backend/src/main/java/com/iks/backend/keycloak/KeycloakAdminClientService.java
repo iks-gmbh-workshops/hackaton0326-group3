@@ -192,6 +192,34 @@ public class KeycloakAdminClientService implements KeycloakService {
         }
     }
 
+    @Override
+    public List<String> listUserGroupIds(String userId) {
+        try (Keycloak keycloak = buildAdminClient()) {
+            RealmResource realm = keycloak.realm(properties.getRealm());
+            UserResource userResource = realm.users().get(userId);
+
+            try {
+                userResource.toRepresentation();
+            } catch (NotFoundException notFound) {
+                throw new UserNotFoundException(userId);
+            }
+
+            List<GroupRepresentation> groups = userResource.groups();
+            if (groups == null) {
+                return List.of();
+            }
+
+            return groups.stream()
+                .map(GroupRepresentation::getId)
+                .filter(id -> id != null && !id.isBlank())
+                .toList();
+        } catch (UserNotFoundException missingUser) {
+            throw missingUser;
+        } catch (RuntimeException runtimeException) {
+            throw new KeycloakServiceException("Failed to list user groups from Keycloak", runtimeException);
+        }
+    }
+
     private Keycloak buildAdminClient() {
         String serverUrl = properties.getBaseUrl();
         if (serverUrl.endsWith("/")) {

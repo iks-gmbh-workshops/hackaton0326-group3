@@ -39,6 +39,7 @@ public class GroupService {
 
         String ownerId = getCurrentUserId();
         String keycloakGroupId = keycloakService.createGroup(groupName);
+        keycloakService.addUserToGroup(ownerId, keycloakGroupId);
         AppGroup group = new AppGroup(keycloakGroupId, groupName, normalizedDescription, ownerId);
 
         try {
@@ -83,6 +84,18 @@ public class GroupService {
         group.setDescription(normalizedDescription);
         
         return appGroupRepository.saveAndFlush(group);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AppGroup> listMyGroups() {
+        String userId = getCurrentUserId();
+        List<String> groupIds = keycloakService.listUserGroupIds(userId);
+        if (groupIds.isEmpty()) {
+            return List.of();
+        }
+        return appGroupRepository.findAllById(groupIds).stream()
+            .sorted((a, b) -> a.getName().compareToIgnoreCase(b.getName()))
+            .toList();
     }
 
     @Transactional(readOnly = true)

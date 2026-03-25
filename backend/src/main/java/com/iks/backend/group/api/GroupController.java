@@ -34,6 +34,13 @@ public class GroupController {
             .toList();
     }
 
+    @GetMapping("/my")
+    public List<GroupResponse> listMyGroups() {
+        return groupService.listMyGroups().stream()
+            .map(GroupController::toGroupResponse)
+            .toList();
+    }
+
     @GetMapping("/{groupId}")
     public GroupResponse getGroup(@PathVariable String groupId) {
         return toGroupResponse(groupService.getGroup(groupId));
