@@ -1,6 +1,7 @@
 export interface BackendGroup {
   id: string;
   name: string;
+  description: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -66,10 +67,10 @@ export async function getGroupMembers(token: string, groupId: string) {
   return request<GroupMember[]>(`/api/groups/${groupId}/members`, token);
 }
 
-export async function createGroup(token: string, name: string) {
+export async function createGroup(token: string, name: string, description?: string) {
   return request<BackendGroup>("/api/groups", token, {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, description: description || null }),
   });
 }
 

@@ -31,7 +31,7 @@ export default function NewGroupPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const createdGroup = await createGroup(accessToken, name.trim());
+      const createdGroup = await createGroup(accessToken, name.trim(), description.trim() || undefined);
       router.push(`/groups/${createdGroup.id}`);
     } catch (apiError) {
       if (isGroupApiError(apiError)) {

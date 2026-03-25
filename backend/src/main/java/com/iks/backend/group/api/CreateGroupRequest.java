@@ -1,4 +1,4 @@
 package com.iks.backend.group.api;
 
-public record CreateGroupRequest(String name) {
+public record CreateGroupRequest(String name, String description) {
 }

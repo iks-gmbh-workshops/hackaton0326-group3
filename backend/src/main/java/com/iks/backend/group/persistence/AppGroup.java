@@ -20,6 +20,9 @@ public class AppGroup {
     @Column(name = "name", nullable = false, length = 255)
     private String name;
 
+    @Column(name = "description", length = 1000)
+    private String description;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -32,6 +35,12 @@ public class AppGroup {
     public AppGroup(String id, String name) {
         this.id = id;
         this.name = name;
+    }
+
+    public AppGroup(String id, String name, String description) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
     }
 
     @PrePersist
@@ -60,6 +69,14 @@ public class AppGroup {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public Instant getCreatedAt() {

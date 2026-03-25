@@ -111,10 +111,13 @@ export default function DashboardPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Users className="size-3" />
-                      ID: {group.id}
-                    </div>
+                    {group.description ? (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {group.description}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">No description</p>
+                    )}
                   </CardContent>
                 </Card>
               </Link>

@@ -48,7 +48,8 @@ public class GroupController {
     @PostMapping
     public ResponseEntity<GroupResponse> createGroup(@RequestBody CreateGroupRequest request) {
         String requestedName = request == null ? null : request.name();
-        AppGroup createdGroup = groupService.createGroup(requestedName);
+        String requestedDescription = request == null ? null : request.description();
+        AppGroup createdGroup = groupService.createGroup(requestedName, requestedDescription);
 
         return ResponseEntity
             .created(URI.create("/api/groups/" + createdGroup.getId()))
@@ -78,6 +79,7 @@ public class GroupController {
         return new GroupResponse(
             group.getId(),
             group.getName(),
+            group.getDescription(),
             group.getCreatedAt(),
             group.getUpdatedAt()
         );

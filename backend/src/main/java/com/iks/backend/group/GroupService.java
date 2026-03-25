@@ -26,15 +26,16 @@ public class GroupService {
     }
 
     @Transactional
-    public AppGroup createGroup(String rawGroupName) {
+    public AppGroup createGroup(String rawGroupName, String description) {
         String groupName = normalizeGroupName(rawGroupName);
+        String normalizedDescription = normalizeDescription(description);
 
         if (appGroupRepository.existsByNameIgnoreCase(groupName)) {
             throw new GroupAlreadyExistsException(groupName);
         }
 
         String keycloakGroupId = keycloakService.createGroup(groupName);
-        AppGroup group = new AppGroup(keycloakGroupId, groupName);
+        AppGroup group = new AppGroup(keycloakGroupId, groupName, normalizedDescription);
 
         try {
             return appGroupRepository.saveAndFlush(group);
@@ -87,6 +88,20 @@ public class GroupService {
         } catch (RuntimeException rollbackFailure) {
             originalFailure.addSuppressed(rollbackFailure);
         }
+    }
+
+    private static String normalizeDescription(String rawDescription) {
+        if (rawDescription == null) {
+            return null;
+        }
+        String description = rawDescription.trim();
+        if (description.isEmpty()) {
+            return null;
+        }
+        if (description.length() > 1000) {
+            throw new InvalidGroupRequestException("Group description must be at most 1000 characters");
+        }
+        return description;
     }
 
     private static String normalizeGroupName(String rawGroupName) {

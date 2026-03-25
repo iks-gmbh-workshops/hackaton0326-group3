@@ -1,5 +1,16 @@
 # Changelog — drumdibum frontend
 
+## 2026-03-25 — Group description (end-to-end)
+
+### Added
+
+- **Flyway migration** `V2__add_description_to_app_group.sql` — adds `description VARCHAR(1000)` column
+- **Backend**: `CreateGroupRequest`, `GroupResponse`, `GroupService`, `GroupController` now handle `description`
+- **Frontend API** (`group-api.ts`): `BackendGroup.description` field + `createGroup()` accepts description
+- **Create group form** (`groups/new/page.tsx`): description is now sent to the backend
+- **Group detail page** (`groups/[id]/page.tsx`): shows description under group name
+- **Dashboard** (`dashboard/page.tsx`): group cards show description instead of ID
+
 ## 2026-03-24 — Initial frontend scaffold
 
 ### Added

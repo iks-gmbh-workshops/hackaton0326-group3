@@ -179,7 +179,9 @@ export default function GroupDetailPage({
               Group
             </Badge>
           </div>
-          <p className="mt-1 text-muted-foreground">ID: {group.id}</p>
+          {group.description && (
+            <p className="mt-1 text-muted-foreground">{group.description}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <Link
