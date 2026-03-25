@@ -9,6 +9,11 @@ keycloak:
     client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:${KEYCLOAK_CLIENT_SECRET:QNCDUKfk9WKuUszfpNxVbU0mKIdjPzj0}}
 
 spring:
+  devtools:
+    restart:
+      enabled: true
+    livereload:
+      enabled: true
   application:
     name: backend
   datasource:

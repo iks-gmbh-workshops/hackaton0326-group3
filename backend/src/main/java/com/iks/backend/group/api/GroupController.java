@@ -75,6 +75,12 @@ public class GroupController {
         return toGroupResponse(updatedGroup);
     }
 
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<Void> deleteGroup(@PathVariable String groupId) {
+        groupService.deleteGroup(groupId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{groupId}/members")
     public ResponseEntity<Void> addMember(
         @PathVariable String groupId,

@@ -1,11 +1,13 @@
 "use client";
 
 import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { mockActivities } from "@/lib/mock-data";
 import {
   removeMemberFromGroup,
+  deleteGroup,
   getGroup,
   getGroupMembers,
   isGroupApiError,
@@ -17,7 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2 } from "lucide-react";
 
 function getInitials(name: string) {
   return name
@@ -34,12 +36,14 @@ export default function GroupDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const router = useRouter();
+  const { user, isLoggedIn, isLoading, accessToken } = useAuth();
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [memberActionError, setMemberActionError] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -134,6 +138,28 @@ export default function GroupDetailPage({
     );
   }
 
+  const isOwner = user?.id === group.ownerId;
+
+  const handleDeleteGroup = () => {
+    if (!confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+      return;
+    }
+
+    void (async () => {
+      if (!accessToken) return;
+      setDeleting(true);
+      try {
+        await deleteGroup(accessToken, id);
+        router.push("/dashboard");
+      } catch (error) {
+        setMemberActionError(
+          isGroupApiError(error) ? error.message : "Failed to delete group."
+        );
+        setDeleting(false);
+      }
+    })();
+  };
+
   const activities = mockActivities.filter((activity) => activity.groupId === group.id);
   const memberCount = members?.length ?? 0;
 
@@ -184,27 +210,42 @@ export default function GroupDetailPage({
           )}
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/groups/${group.id}/edit`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <Pencil className="mr-1 size-4" />
-            Edit Group
-          </Link>
-          <Link
-            href={`/groups/${group.id}/members/add`}
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <UserPlus className="mr-1 size-4" />
-            Add Member
-          </Link>
-          <Link
-            href={`/groups/${group.id}/activities/new`}
-            className={buttonVariants({ size: "sm" })}
-          >
-            <Plus className="mr-1 size-4" />
-            New Activity
-          </Link>
+          {isOwner && (
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleting}
+              onClick={handleDeleteGroup}
+            >
+              <Trash2 className="mr-1 size-4" />
+              {deleting ? "Deleting..." : "Delete Group"}
+            </Button>
+          )}
+          {isOwner && (
+            <>
+              <Link
+                href={`/groups/${group.id}/edit`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <Pencil className="mr-1 size-4" />
+                Edit Group
+              </Link>
+              <Link
+                href={`/groups/${group.id}/members/add`}
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                <UserPlus className="mr-1 size-4" />
+                Add Member
+              </Link>
+              <Link
+                href={`/groups/${group.id}/activities/new`}
+                className={buttonVariants({ size: "sm" })}
+              >
+                <Plus className="mr-1 size-4" />
+                New Activity
+              </Link>
+            </>
+          )}
         </div>
       </div>
 
@@ -256,7 +297,7 @@ export default function GroupDetailPage({
                       {member.email}
                     </p>
                   </div>
-                  {member.id !== group.ownerId && (
+                  {isOwner && member.id !== group.ownerId && (
                     <Button
                       size="icon"
                       variant="ghost"
@@ -274,17 +315,19 @@ export default function GroupDetailPage({
               ))}
             </div>
           )}
-          <Link
-            href={`/groups/${group.id}/members/add`}
-            className={buttonVariants({
-              variant: "outline",
-              size: "sm",
-              className: "mt-3 w-full",
-            })}
-          >
-            <UserPlus className="mr-1 size-4" />
-            Add Member
-          </Link>
+          {isOwner && (
+            <Link
+              href={`/groups/${group.id}/members/add`}
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+                className: "mt-3 w-full",
+              })}
+            >
+              <UserPlus className="mr-1 size-4" />
+              Add Member
+            </Link>
+          )}
         </section>
 
         <section className="lg:col-span-2">

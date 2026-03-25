@@ -67,7 +67,12 @@ public class GroupService {
     @Transactional
     public AppGroup updateGroup(String groupId, String rawGroupName, String description) {
         AppGroup group = getGroup(groupId);
-        
+        String currentUserId = getCurrentUserId();
+
+        if (!group.getOwnerId().equals(currentUserId)) {
+            throw new GroupOwnershipException("Only the group owner can edit this group");
+        }
+
         String groupName = normalizeGroupName(rawGroupName);
         String normalizedDescription = normalizeDescription(description);
         
@@ -98,16 +103,41 @@ public class GroupService {
             .toList();
     }
 
+    @Transactional
+    public void deleteGroup(String groupId) {
+        AppGroup group = getGroup(groupId);
+        String currentUserId = getCurrentUserId();
+
+        if (!group.getOwnerId().equals(currentUserId)) {
+            throw new GroupOwnershipException("Only the group owner can delete this group");
+        }
+
+        keycloakService.deleteGroup(groupId);
+        appGroupRepository.delete(group);
+    }
+
     @Transactional(readOnly = true)
     public void addUserToGroup(String groupId, String rawUserId) {
-        getGroup(groupId);
+        AppGroup group = getGroup(groupId);
+        String currentUserId = getCurrentUserId();
+
+        if (!group.getOwnerId().equals(currentUserId)) {
+            throw new GroupOwnershipException("Only the group owner can add members");
+        }
+
         String userId = normalizeUserId(rawUserId);
         keycloakService.addUserToGroup(userId, groupId);
     }
 
     @Transactional(readOnly = true)
     public void removeUserFromGroup(String groupId, String rawUserId) {
-        getGroup(groupId);
+        AppGroup group = getGroup(groupId);
+        String currentUserId = getCurrentUserId();
+
+        if (!group.getOwnerId().equals(currentUserId)) {
+            throw new GroupOwnershipException("Only the group owner can remove members");
+        }
+
         String userId = normalizeUserId(rawUserId);
         keycloakService.removeUserFromGroup(userId, groupId);
     }
