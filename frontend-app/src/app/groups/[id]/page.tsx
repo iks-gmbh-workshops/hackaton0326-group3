@@ -359,7 +359,7 @@ export default function GroupDetailPage({
                 const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
                 return (
-                  <Link key={activity.id} href={`/activities/${activity.id}`}>
+                  <Link key={activity.id} href={`/groups/${id}/activities/${activity.id}`}>
                     <Card className="transition-colors hover:border-primary/40">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium">
