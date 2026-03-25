@@ -10,6 +10,7 @@ import com.iks.backend.activity.persistence.ActivityAttendance;
 import com.iks.backend.activity.persistence.ActivityAttendanceRepository;
 import com.iks.backend.activity.persistence.ActivityRepository;
 import com.iks.backend.activity.persistence.AttendanceStatus;
+import com.iks.backend.email.ActivityNotificationService;
 import com.iks.backend.group.GroupOwnershipException;
 import com.iks.backend.group.GroupService;
 import com.iks.backend.group.persistence.AppGroup;
@@ -26,11 +27,13 @@ public class ActivityService {
     private final ActivityRepository activityRepository;
     private final ActivityAttendanceRepository attendanceRepository;
     private final GroupService groupService;
+    private final ActivityNotificationService notificationService;
 
-    public ActivityService(ActivityRepository activityRepository, ActivityAttendanceRepository attendanceRepository, GroupService groupService) {
+    public ActivityService(ActivityRepository activityRepository, ActivityAttendanceRepository attendanceRepository, GroupService groupService, ActivityNotificationService notificationService) {
         this.activityRepository = activityRepository;
         this.attendanceRepository = attendanceRepository;
         this.groupService = groupService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -48,7 +51,9 @@ public class ActivityService {
         String normalizedLocation = normalizeLocation(location);
 
         Activity activity = new Activity(groupId, title, normalizedDescription, scheduledAt, normalizedLocation);
-        return activityRepository.saveAndFlush(activity);
+        Activity saved = activityRepository.saveAndFlush(activity);
+        notificationService.notifyActivityCreated(saved, group, currentUserId);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -167,8 +172,9 @@ public class ActivityService {
     }
 
     @Transactional
-    public ActivityAttendance respondToActivity(String activityId, String statusStr, String userName, String userEmail) {
+    public ActivityAttendance respondToActivity(String activityId, String groupId, String statusStr, String userName, String userEmail) {
         Activity activity = getActivity(activityId);
+        groupService.getGroup(groupId);
 
         if (activity.getScheduledAt().isBefore(LocalDateTime.now())) {
             throw new InvalidActivityRequestException("Cannot change attendance after the activity has started");
@@ -190,7 +196,7 @@ public class ActivityService {
             throw new InvalidActivityRequestException("User email is required");
         }
 
-        return attendanceRepository.findByActivityIdAndUserId(activityId, currentUserId)
+        ActivityAttendance result = attendanceRepository.findByActivityIdAndUserId(activityId, currentUserId)
             .map(existing -> {
                 existing.setStatus(status);
                 existing.setUserName(userName.trim());
@@ -203,6 +209,7 @@ public class ActivityService {
                 );
                 return attendanceRepository.saveAndFlush(attendance);
             });
+        return result;
     }
 
     @Transactional(readOnly = true)

@@ -120,7 +120,7 @@ public class ActivityController {
         String userEmail = request == null ? null : request.userEmail();
 
         ActivityAttendance attendance = activityService.respondToActivity(
-            activityId, status, userName, userEmail
+            activityId, groupId, status, userName, userEmail
         );
         return toAttendanceResponse(attendance);
     }

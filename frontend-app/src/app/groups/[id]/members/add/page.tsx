@@ -227,36 +227,32 @@ export default function AddMemberPage({
         return;
       }
 
-      const registeredUserIds = [
-        ...new Set(
-          pending
-            .filter((member) => member.type === "registered")
-            .map((member) => member.id)
-            .filter((memberId): memberId is string => !!memberId)
-        ),
+      const memberRequests = [
+        ...new Map(
+          pending.flatMap((member) => {
+            if (member.type === "registered" && member.id) {
+              return [[`user:${member.id}`, { userId: member.id }] as const];
+            }
+            if (member.type === "email") {
+              return [[`email:${member.email.toLowerCase()}`, { email: member.email }] as const];
+            }
+            return [];
+          })
+        ).values(),
       ];
 
-      if (registeredUserIds.length === 0) {
-        setSubmitError("Only registered users can be assigned to Keycloak groups.");
+      if (memberRequests.length === 0) {
+        setSubmitError("No valid members selected.");
         return;
       }
-
-      const emailInviteCount = pending.filter((member) => member.type === "email").length;
 
       setSubmitting(true);
       setSubmitError(null);
       setSubmitInfo(null);
       try {
         await Promise.all(
-          registeredUserIds.map((userId) => addMemberToGroup(accessToken, id, userId))
+          memberRequests.map((request) => addMemberToGroup(accessToken, id, request))
         );
-
-        if (emailInviteCount > 0) {
-          setSubmitInfo(
-            `${emailInviteCount} email invite${emailInviteCount > 1 ? "s were" : " was"} not processed yet.`
-          );
-        }
-
         router.push(`/groups/${id}`);
       } catch (error) {
         setSubmitting(false);

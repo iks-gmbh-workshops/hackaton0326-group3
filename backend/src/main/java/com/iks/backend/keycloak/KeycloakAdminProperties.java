@@ -13,6 +13,8 @@ public class KeycloakAdminProperties {
     private String realm;
     private String clientId;
     private String clientSecret;
+    private String inviteClientId = "drumdibum-frontend";
+    private int inviteActionsLifespanSeconds = 86400;
 
     @PostConstruct
     void validate() {
@@ -58,5 +60,21 @@ public class KeycloakAdminProperties {
 
     public void setClientSecret(String clientSecret) {
         this.clientSecret = clientSecret;
+    }
+
+    public String getInviteClientId() {
+        return inviteClientId;
+    }
+
+    public void setInviteClientId(String inviteClientId) {
+        this.inviteClientId = inviteClientId;
+    }
+
+    public int getInviteActionsLifespanSeconds() {
+        return inviteActionsLifespanSeconds;
+    }
+
+    public void setInviteActionsLifespanSeconds(int inviteActionsLifespanSeconds) {
+        this.inviteActionsLifespanSeconds = inviteActionsLifespanSeconds;
     }
 }

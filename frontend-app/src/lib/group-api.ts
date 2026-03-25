@@ -92,10 +92,14 @@ export async function deleteGroup(token: string, groupId: string) {
   });
 }
 
-export async function addMemberToGroup(token: string, groupId: string, userId: string) {
+export async function addMemberToGroup(
+  token: string,
+  groupId: string,
+  params: { userId?: string; email?: string }
+) {
   return request<void>(`/api/groups/${groupId}/members`, token, {
     method: "POST",
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify(params),
   });
 }
 

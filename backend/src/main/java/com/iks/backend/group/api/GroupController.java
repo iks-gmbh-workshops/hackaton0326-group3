@@ -7,6 +7,8 @@ import com.iks.backend.group.GroupService;
 import com.iks.backend.group.persistence.AppGroup;
 import com.iks.backend.user.UserLookupResult;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/groups")
 public class GroupController {
 
+    private static final Logger log = LoggerFactory.getLogger(GroupController.class);
     private final GroupService groupService;
 
     public GroupController(GroupService groupService) {
@@ -87,7 +90,14 @@ public class GroupController {
         @RequestBody AddGroupMemberRequest request
     ) {
         String requestedUserId = request == null ? null : request.userId();
-        groupService.addUserToGroup(groupId, requestedUserId);
+        String requestedEmail = request == null ? null : request.email();
+        log.debug(
+            "Add member request received for groupId={} with userIdPresent={} emailPresent={}",
+            groupId,
+            requestedUserId != null && !requestedUserId.isBlank(),
+            requestedEmail != null && !requestedEmail.isBlank()
+        );
+        groupService.addUserToGroup(groupId, requestedUserId, requestedEmail);
         return ResponseEntity.noContent().build();
     }
 

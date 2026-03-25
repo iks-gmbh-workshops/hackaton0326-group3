@@ -1,6 +1,7 @@
 package com.iks.backend.keycloak;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.keycloak.representations.idm.UserRepresentation;
 
@@ -19,4 +20,10 @@ public interface KeycloakService {
     List<UserRepresentation> listGroupMembers(String groupId);
 
     List<String> listUserGroupIds(String userId);
+
+    Optional<UserRepresentation> findUserByEmail(String email);
+
+    String createUser(String email, List<String> requiredActions);
+
+    void sendRequiredActionsEmail(String userId, String redirectUri, List<String> requiredActions);
 }
