@@ -2,23 +2,28 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { KeycloakProfile } from "keycloak-js";
-import type { User } from "./types";
+import { listMyNotifications } from "./user-api";
+import type { Notification, User } from "./types";
 import { getKeycloakClient } from "./keycloak";
 
 interface AuthContextValue {
   user: User | null;
+  notifications: Notification[];
   isLoggedIn: boolean;
   isLoading: boolean;
   accessToken: string | null;
+  consumeNotification: (notificationId: string) => void;
   login: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
+  notifications: [],
   isLoggedIn: false,
   isLoading: true,
   accessToken: null,
+  consumeNotification: () => {},
   login: async () => {},
   logout: async () => {},
 });
@@ -99,6 +104,7 @@ function mapUser(profile: KeycloakProfile | null, tokenParsed: Record<string, un
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [accessToken, setAccessToken] = useState<string | null>(null);
 
@@ -116,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!keycloak.authenticated || !keycloak.tokenParsed) {
         if (!cancelled) {
           setUser(null);
+          setNotifications([]);
           setAccessToken(null);
         }
         return;
@@ -128,9 +135,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile = null;
       }
 
+      const token = keycloak.token ?? null;
+      let loadedNotifications: Notification[] = [];
+      if (token) {
+        try {
+          loadedNotifications = await listMyNotifications(token);
+        } catch {
+          loadedNotifications = [];
+        }
+      }
+
       if (!cancelled) {
         setUser(mapUser(profile, keycloak.tokenParsed));
-        setAccessToken(keycloak.token ?? null);
+        setNotifications(loadedNotifications);
+        setAccessToken(token);
       }
     };
 
@@ -148,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         keycloak.clearToken();
         if (!cancelled) {
           setUser(null);
+          setNotifications([]);
           setAccessToken(null);
         }
       }
@@ -161,6 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             pkceMethod: "S256",
             checkLoginIframe: false,
             silentCheckSsoFallback: false,
+            scope: "openid profile email roles",
             redirectUri: window.location.href,
           });
         }
@@ -178,6 +198,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         keycloak.onAuthLogout = () => {
           if (!cancelled) {
             setUser(null);
+            setNotifications([]);
             setAccessToken(null);
           }
         };
@@ -191,6 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         if (!cancelled) {
           setUser(null);
+          setNotifications([]);
           setAccessToken(null);
         }
       } finally {
@@ -221,6 +243,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await keycloak.login({
+      scope: "openid profile email roles",
       redirectUri: window.location.href,
     });
   };
@@ -229,6 +252,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const keycloak = getKeycloakClient();
     if (!keycloak) {
       setUser(null);
+      setNotifications([]);
       setAccessToken(null);
       return;
     }
@@ -238,9 +262,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const consumeNotification = (notificationId: string) => {
+    setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
+  };
+
   return (
     <AuthContext
-      value={{ user, isLoggedIn: !!user, isLoading, accessToken, login, logout }}
+      value={{
+        user,
+        notifications,
+        isLoggedIn: !!user,
+        isLoading,
+        accessToken,
+        consumeNotification,
+        login,
+        logout,
+      }}
     >
       {children}
     </AuthContext>

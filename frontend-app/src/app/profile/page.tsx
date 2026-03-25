@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { deleteOwnAccount, isUserApiError } from "@/lib/user-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ function getInitials(name: string) {
 }
 
 export default function ProfilePage() {
-  const { user, isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading, accessToken, logout } = useAuth();
 
   if (isLoading) {
     return (
@@ -39,13 +40,30 @@ export default function ProfilePage() {
     );
   }
 
-  return <ProfileContent key={user.id} user={user} />;
+  return (
+    <ProfileContent
+      key={user.id}
+      user={user}
+      accessToken={accessToken}
+      logout={logout}
+    />
+  );
 }
 
-function ProfileContent({ user }: { user: User }) {
+function ProfileContent({
+  user,
+  accessToken,
+  logout,
+}: {
+  user: User;
+  accessToken: string | null;
+  logout: () => Promise<void>;
+}) {
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +72,36 @@ function ProfileContent({ user }: { user: User }) {
     setTimeout(() => {
       setSaving(false);
     }, 500);
+  };
+
+  const handleDeleteAccount = () => {
+    void (async () => {
+      if (!accessToken) {
+        setDeleteError("Missing access token. Please log in again.");
+        return;
+      }
+
+      if (!window.confirm("Delete your account permanently? This cannot be undone.")) {
+        return;
+      }
+
+      setDeleting(true);
+      setDeleteError(null);
+
+      try {
+        await deleteOwnAccount(accessToken);
+        try {
+          await logout();
+        } catch {
+          window.location.href = "/";
+        }
+      } catch (error) {
+        setDeleteError(
+          isUserApiError(error) ? error.message : "Failed to delete account. Please try again."
+        );
+        setDeleting(false);
+      }
+    })();
   };
 
   return (
@@ -115,14 +163,13 @@ function ProfileContent({ user }: { user: User }) {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => {
-              // TODO: call backend API to delete account
-              alert("Account deletion is not yet implemented.");
-            }}
+            onClick={handleDeleteAccount}
+            disabled={deleting}
           >
             <Trash2 className="mr-1 size-4" />
-            Delete Account
+            {deleting ? "Deleting…" : "Delete Account"}
           </Button>
+          {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
         </CardContent>
       </Card>
     </div>

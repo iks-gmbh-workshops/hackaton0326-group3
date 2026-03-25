@@ -17,6 +17,7 @@ logging:
   level:
     com.iks.backend.group: ${LOG_LEVEL_GROUP:DEBUG}
     com.iks.backend.keycloak: ${LOG_LEVEL_KEYCLOAK:DEBUG}
+    com.iks.backend.user: ${LOG_LEVEL_USER:DEBUG}
 
 spring:
   devtools:

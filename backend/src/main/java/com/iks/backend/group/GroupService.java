@@ -187,6 +187,19 @@ public class GroupService {
         keycloakService.removeUserFromGroup(userId, groupId);
     }
 
+    @Transactional
+    public void leaveGroup(String groupId) {
+        AppGroup group = getGroup(groupId);
+        String currentUserId = getCurrentUserId();
+
+        if (group.getOwnerId().equals(currentUserId)) {
+            throw new GroupOwnershipException("Group owners cannot leave their own group");
+        }
+
+        keycloakService.removeUserFromGroup(currentUserId, groupId);
+        log.debug("User {} left group {}", currentUserId, groupId);
+    }
+
     @Transactional(readOnly = true)
     public List<UserLookupResult> listGroupMembers(String groupId) {
         getGroup(groupId);

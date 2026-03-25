@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { mockNotifications } from "@/lib/mock-data";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -25,9 +24,10 @@ function getInitials(name: string) {
 }
 
 export function Navbar() {
-  const { user, isLoggedIn, isLoading, login, logout } = useAuth();
+  const { user, notifications, isLoggedIn, isLoading, consumeNotification, login, logout } =
+    useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const unreadCount = mockNotifications.filter((n) => !n.read).length;
+  const unreadCount = notifications.length;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -61,16 +61,22 @@ export function Navbar() {
                   )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  <div className="px-3 py-2 text-sm font-semibold">Notifications</div>
+                  <div className="px-3 py-2 text-sm font-semibold">
+                    Notifications{unreadCount > 0 ? ` (${unreadCount})` : ""}
+                  </div>
                   <DropdownMenuSeparator />
-                  {mockNotifications.length === 0 ? (
+                  {notifications.length === 0 ? (
                     <div className="px-3 py-4 text-center text-sm text-muted-foreground">
                       No notifications
                     </div>
                   ) : (
-                    mockNotifications.map((n) => (
-                      <DropdownMenuItem key={n.id}>
-                        <Link href={n.link ?? "#"} className="flex w-full flex-col items-start gap-0.5">
+                    notifications.map((n) => (
+                      <DropdownMenuItem key={n.id} onSelect={() => consumeNotification(n.id)}>
+                        <Link
+                          href={n.link ?? "#"}
+                          className="flex w-full flex-col items-start gap-0.5"
+                          onClick={() => consumeNotification(n.id)}
+                        >
                           <span className={n.read ? "text-muted-foreground" : "font-medium"}>
                             {n.title}
                           </span>

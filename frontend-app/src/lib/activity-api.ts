@@ -19,7 +19,7 @@ class ActivityApiError extends Error {
 }
 
 function getBackendBaseUrl() {
-  return (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000").replace(/\/$/, "");
+  return "/api/custom";
 }
 
 async function parseErrorMessage(response: Response) {
@@ -53,11 +53,11 @@ async function request<T>(path: string, token: string, init?: RequestInit): Prom
 }
 
 export async function listGroupActivities(token: string, groupId: string) {
-  return request<BackendActivity[]>(`/api/groups/${groupId}/activities`, token);
+  return request<BackendActivity[]>(`/groups/${groupId}/activities`, token);
 }
 
 export async function getActivity(token: string, groupId: string, activityId: string) {
-  return request<BackendActivity>(`/api/groups/${groupId}/activities/${activityId}`, token);
+  return request<BackendActivity>(`/groups/${groupId}/activities/${activityId}`, token);
 }
 
 export async function createActivity(
@@ -69,7 +69,7 @@ export async function createActivity(
   time: string,
   location: string | undefined
 ) {
-  return request<BackendActivity>(`/api/groups/${groupId}/activities`, token, {
+  return request<BackendActivity>(`/groups/${groupId}/activities`, token, {
     method: "POST",
     body: JSON.stringify({
       title,
@@ -91,7 +91,7 @@ export async function updateActivity(
   time: string,
   location: string | undefined
 ) {
-  return request<BackendActivity>(`/api/groups/${groupId}/activities/${activityId}`, token, {
+  return request<BackendActivity>(`/groups/${groupId}/activities/${activityId}`, token, {
     method: "PUT",
     body: JSON.stringify({
       title,
@@ -104,7 +104,7 @@ export async function updateActivity(
 }
 
 export async function deleteActivity(token: string, groupId: string, activityId: string) {
-  return request<void>(`/api/groups/${groupId}/activities/${activityId}`, token, {
+  return request<void>(`/groups/${groupId}/activities/${activityId}`, token, {
     method: "DELETE",
   });
 }
@@ -122,7 +122,7 @@ export interface BackendAttendance {
 
 export async function listAttendees(token: string, groupId: string, activityId: string) {
   return request<BackendAttendance[]>(
-    `/api/groups/${groupId}/activities/${activityId}/attendance`,
+    `/groups/${groupId}/activities/${activityId}/attendance`,
     token
   );
 }
@@ -136,7 +136,7 @@ export async function respondToActivity(
   userEmail: string
 ) {
   return request<BackendAttendance>(
-    `/api/groups/${groupId}/activities/${activityId}/attendance`,
+    `/groups/${groupId}/activities/${activityId}/attendance`,
     token,
     {
       method: "PUT",

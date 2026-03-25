@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
   removeMemberFromGroup,
+  leaveGroup,
   deleteGroup,
   getGroup,
   getGroupMembers,
@@ -19,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2 } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2, LogOut } from "lucide-react";
 
 function getInitials(name: string) {
   return name
@@ -45,6 +46,7 @@ export default function GroupDetailPage({
   const [memberActionError, setMemberActionError] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -167,6 +169,31 @@ export default function GroupDetailPage({
   const memberCount = members?.length ?? 0;
   const activityCount = activities?.length ?? 0;
 
+  const handleLeaveGroup = () => {
+    if (!confirm("Are you sure you want to leave this group?")) {
+      return;
+    }
+
+    void (async () => {
+      if (!accessToken) {
+        setMemberActionError("Missing access token. Please log in again.");
+        return;
+      }
+
+      setMemberActionError(null);
+      setLeaving(true);
+      try {
+        await leaveGroup(accessToken, id);
+        router.push("/dashboard");
+      } catch (error) {
+        setMemberActionError(
+          isGroupApiError(error) ? error.message : "Failed to leave group."
+        );
+        setLeaving(false);
+      }
+    })();
+  };
+
   const handleRemoveMember = (memberId: string) => {
     void (async () => {
       if (!accessToken) {
@@ -223,6 +250,17 @@ export default function GroupDetailPage({
             >
               <Trash2 className="mr-1 size-4" />
               {deleting ? "Deleting..." : "Delete Group"}
+            </Button>
+          )}
+          {!isOwner && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={leaving}
+              onClick={handleLeaveGroup}
+            >
+              <LogOut className="mr-1 size-4" />
+              {leaving ? "Leaving..." : "Leave Group"}
             </Button>
           )}
           {isOwner && (

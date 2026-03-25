@@ -308,6 +308,25 @@ public class KeycloakAdminClientService implements KeycloakService {
         }
     }
 
+    @Override
+    public void deleteUser(String userId) {
+        try (Keycloak keycloak = buildAdminClient()) {
+            RealmResource realm = keycloak.realm(properties.getRealm());
+            UserResource userResource = realm.users().get(userId);
+            try {
+                userResource.toRepresentation();
+            } catch (NotFoundException notFound) {
+                throw new UserNotFoundException(userId);
+            }
+            userResource.remove();
+            log.debug("Deleted Keycloak user userId={}", userId);
+        } catch (UserNotFoundException missingUser) {
+            throw missingUser;
+        } catch (RuntimeException runtimeException) {
+            throw new KeycloakServiceException("Failed to delete user in Keycloak", runtimeException);
+        }
+    }
+
     private static boolean equalsEmail(String left, String right) {
         if (left == null || right == null) {
             return false;

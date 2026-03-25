@@ -10,4 +10,6 @@ public interface ActivityAttendanceRepository extends JpaRepository<ActivityAtte
     List<ActivityAttendance> findByActivityId(String activityId);
 
     Optional<ActivityAttendance> findByActivityIdAndUserId(String activityId, String userId);
+
+    long deleteByUserId(String userId);
 }

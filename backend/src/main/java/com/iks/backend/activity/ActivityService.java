@@ -14,6 +14,7 @@ import com.iks.backend.email.ActivityNotificationService;
 import com.iks.backend.group.GroupOwnershipException;
 import com.iks.backend.group.GroupService;
 import com.iks.backend.group.persistence.AppGroup;
+import com.iks.backend.user.UserService;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -28,12 +29,20 @@ public class ActivityService {
     private final ActivityAttendanceRepository attendanceRepository;
     private final GroupService groupService;
     private final ActivityNotificationService notificationService;
+    private final UserService userService;
 
-    public ActivityService(ActivityRepository activityRepository, ActivityAttendanceRepository attendanceRepository, GroupService groupService, ActivityNotificationService notificationService) {
+    public ActivityService(
+        ActivityRepository activityRepository,
+        ActivityAttendanceRepository attendanceRepository,
+        GroupService groupService,
+        ActivityNotificationService notificationService,
+        UserService userService
+    ) {
         this.activityRepository = activityRepository;
         this.attendanceRepository = attendanceRepository;
         this.groupService = groupService;
         this.notificationService = notificationService;
+        this.userService = userService;
     }
 
     @Transactional
@@ -52,6 +61,13 @@ public class ActivityService {
 
         Activity activity = new Activity(groupId, title, normalizedDescription, scheduledAt, normalizedLocation);
         Activity saved = activityRepository.saveAndFlush(activity);
+        userService.createActivityInviteNotifications(
+            group.getId(),
+            group.getName(),
+            saved.getId(),
+            saved.getTitle(),
+            currentUserId
+        );
         notificationService.notifyActivityCreated(saved, group, currentUserId);
         return saved;
     }
