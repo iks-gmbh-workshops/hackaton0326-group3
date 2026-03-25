@@ -8,6 +8,8 @@ public interface KeycloakService {
 
     String createGroup(String groupName);
 
+    void updateGroup(String groupId, String groupName);
+
     void deleteGroup(String groupId);
 
     void addUserToGroup(String userId, String groupId);

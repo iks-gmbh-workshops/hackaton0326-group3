@@ -66,6 +66,28 @@ public class KeycloakAdminClientService implements KeycloakService {
     }
 
     @Override
+    public void updateGroup(String groupId, String groupName) {
+        try (Keycloak keycloak = buildAdminClient()) {
+            RealmResource realm = keycloak.realm(properties.getRealm());
+            GroupResource groupResource = realm.groups().group(groupId);
+            
+            GroupRepresentation representation;
+            try {
+                representation = groupResource.toRepresentation();
+            } catch (NotFoundException notFound) {
+                throw new GroupNotFoundException(groupId);
+            }
+            
+            representation.setName(groupName);
+            groupResource.update(representation);
+        } catch (GroupNotFoundException missingGroup) {
+            throw missingGroup;
+        } catch (RuntimeException runtimeException) {
+            throw new KeycloakServiceException("Failed to update group in Keycloak", runtimeException);
+        }
+    }
+
+    @Override
     public void deleteGroup(String groupId) {
         try (Keycloak keycloak = buildAdminClient()) {
             RealmResource realm = keycloak.realm(properties.getRealm());

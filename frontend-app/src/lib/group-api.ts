@@ -74,6 +74,13 @@ export async function createGroup(token: string, name: string, description?: str
   });
 }
 
+export async function updateGroup(token: string, groupId: string, name: string, description?: string) {
+  return request<BackendGroup>(`/api/groups/${groupId}`, token, {
+    method: "PUT",
+    body: JSON.stringify({ name, description: description || null }),
+  });
+}
+
 export async function addMemberToGroup(token: string, groupId: string, userId: string) {
   return request<void>(`/api/groups/${groupId}/members`, token, {
     method: "POST",

@@ -59,6 +59,28 @@ public class GroupService {
             .orElseThrow(() -> new GroupNotFoundException(groupId));
     }
 
+    @Transactional
+    public AppGroup updateGroup(String groupId, String rawGroupName, String description) {
+        AppGroup group = getGroup(groupId);
+        
+        String groupName = normalizeGroupName(rawGroupName);
+        String normalizedDescription = normalizeDescription(description);
+        
+        boolean nameChanged = !group.getName().equals(groupName);
+        if (nameChanged && appGroupRepository.existsByNameIgnoreCase(groupName)) {
+            throw new GroupAlreadyExistsException(groupName);
+        }
+        
+        if (nameChanged) {
+            keycloakService.updateGroup(groupId, groupName);
+        }
+        
+        group.setName(groupName);
+        group.setDescription(normalizedDescription);
+        
+        return appGroupRepository.saveAndFlush(group);
+    }
+
     @Transactional(readOnly = true)
     public void addUserToGroup(String groupId, String rawUserId) {
         getGroup(groupId);

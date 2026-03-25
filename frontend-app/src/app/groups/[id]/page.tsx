@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil } from "lucide-react";
 
 function getInitials(name: string) {
   return name
@@ -184,6 +184,13 @@ export default function GroupDetailPage({
           )}
         </div>
         <div className="flex gap-2">
+          <Link
+            href={`/groups/${group.id}/edit`}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <Pencil className="mr-1 size-4" />
+            Edit Group
+          </Link>
           <Link
             href={`/groups/${group.id}/members/add`}
             className={buttonVariants({ variant: "outline", size: "sm" })}
