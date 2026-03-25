@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/auth-context";
+import { createGroup, isGroupApiError } from "@/lib/group-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,20 +14,50 @@ import { ArrowLeft } from "lucide-react";
 
 export default function NewGroupPage() {
   const router = useRouter();
+  const { isLoggedIn, isLoading, accessToken } = useAuth();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!accessToken) {
+      setError("You must be logged in to create a group.");
+      return;
+    }
 
     setSubmitting(true);
-    // TODO: call backend API to create group
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 500);
+    setError(null);
+    try {
+      const createdGroup = await createGroup(accessToken, name.trim());
+      router.push(`/groups/${createdGroup.id}`);
+    } catch (apiError) {
+      if (isGroupApiError(apiError)) {
+        setError(apiError.message);
+      } else {
+        setError("Failed to create group. Please try again.");
+      }
+      setSubmitting(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Please log in to create groups.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
@@ -75,6 +107,7 @@ export default function NewGroupPage() {
                 Cancel
               </Button>
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
         </CardContent>
       </Card>

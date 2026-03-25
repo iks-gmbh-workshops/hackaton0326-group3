@@ -1,15 +1,49 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { mockGroups, mockActivities } from "@/lib/mock-data";
+import { listGroups, type BackendGroup, isGroupApiError } from "@/lib/group-api";
 import { buttonVariants } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, CalendarDays, Plus, MapPin, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Users } from "lucide-react";
 
 export default function DashboardPage() {
-  const { user, isLoggedIn, isLoading } = useAuth();
+  const { user, isLoggedIn, isLoading, accessToken } = useAuth();
+  const [groups, setGroups] = useState<BackendGroup[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isLoggedIn || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadGroups = async () => {
+      try {
+        const loadedGroups = await listGroups(accessToken);
+        if (!cancelled) {
+          setGroups(loadedGroups);
+          setLoadError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setGroups([]);
+          setLoadError(
+            isGroupApiError(error) ? error.message : "Failed to load groups."
+          );
+        }
+      }
+    };
+
+    void loadGroups();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn, accessToken]);
 
   if (isLoading) {
     return (
@@ -27,25 +61,23 @@ export default function DashboardPage() {
     );
   }
 
-  const myGroups = mockGroups.filter((g) =>
-    g.members.some((m) => m.userId === user?.id)
-  );
+  if (!accessToken) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+      </div>
+    );
+  }
 
-  const upcomingActivities = mockActivities
-    .filter((a) => myGroups.some((g) => g.id === a.groupId))
-    .sort((a, b) => a.date.localeCompare(b.date));
-
-  const pendingRsvps = upcomingActivities.filter((a) =>
-    a.participants.some((p) => p.userId === user?.id && p.status === "pending")
-  );
+  const greetingName = user?.name?.split(" ")[0] ?? "there";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {user?.name?.split(" ")[0]}</h1>
+          <h1 className="text-2xl font-bold">Welcome back, {greetingName}</h1>
           <p className="text-muted-foreground">
-            {myGroups.length} group{myGroups.length !== 1 ? "s" : ""} · {upcomingActivities.length} upcoming activit{upcomingActivities.length !== 1 ? "ies" : "y"}
+            {groups === null ? "Loading groups..." : `${groups.length} group${groups.length !== 1 ? "s" : ""}`}
           </p>
         </div>
         <Link href="/groups/new" className={buttonVariants({ size: "sm" })}>
@@ -54,133 +86,39 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      {/* Pending RSVPs */}
-      {pendingRsvps.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-3 text-lg font-semibold">Pending RSVPs</h2>
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">Groups</h2>
+        {loadError && <p className="mb-3 text-sm text-destructive">{loadError}</p>}
+        {groups === null ? (
+          <p className="text-sm text-muted-foreground">Loading groups...</p>
+        ) : groups.length === 0 ? (
+          <Card>
+            <CardContent className="py-6 text-sm text-muted-foreground">
+              No groups yet. Create your first group.
+            </CardContent>
+          </Card>
+        ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {pendingRsvps.map((activity) => (
-              <Link key={activity.id} href={`/activities/${activity.id}`}>
-                <Card className="transition-colors hover:border-primary/40">
+            {groups.map((group) => (
+              <Link key={group.id} href={`/groups/${group.id}`}>
+                <Card className="h-full transition-colors hover:border-primary/40">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium">{activity.title}</CardTitle>
-                      <Badge variant="outline" className="text-xs">
-                        Pending
+                      <CardTitle className="text-sm font-medium">{group.name}</CardTitle>
+                      <Badge variant="secondary" className="text-xs">
+                        Group
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-xs text-muted-foreground">{activity.groupName}</p>
-                    <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <CalendarDays className="size-3" />
-                        {activity.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="size-3" />
-                        {activity.time}
-                      </span>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Users className="size-3" />
+                      ID: {group.id}
                     </div>
                   </CardContent>
                 </Card>
               </Link>
             ))}
-          </div>
-        </section>
-      )}
-
-      {/* My Groups */}
-      <section className="mb-8">
-        <h2 className="mb-3 text-lg font-semibold">My Groups</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {myGroups.map((group) => {
-            const isOwner = group.ownerId === user?.id;
-            return (
-              <Link key={group.id} href={`/groups/${group.id}`}>
-                <Card className="transition-colors hover:border-primary/40">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium">{group.name}</CardTitle>
-                      {isOwner && (
-                        <Badge variant="secondary" className="text-xs">
-                          Admin
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-muted-foreground line-clamp-2">
-                      {group.description}
-                    </p>
-                    <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="size-3" />
-                      {group.members.length} member{group.members.length !== 1 ? "s" : ""}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Upcoming Activities */}
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Upcoming Activities</h2>
-        {upcomingActivities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No upcoming activities.</p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {upcomingActivities.map((activity) => {
-              const myStatus = activity.participants.find(
-                (p) => p.userId === user?.id
-              )?.status;
-              return (
-                <Link key={activity.id} href={`/activities/${activity.id}`}>
-                  <Card className="transition-colors hover:border-primary/40">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-medium">{activity.title}</CardTitle>
-                        {myStatus && (
-                          <Badge
-                            variant={
-                              myStatus === "accepted"
-                                ? "default"
-                                : myStatus === "declined"
-                                  ? "destructive"
-                                  : "outline"
-                            }
-                            className="text-xs"
-                          >
-                            {myStatus}
-                          </Badge>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground">{activity.groupName}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="size-3" />
-                          {activity.date}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-3" />
-                          {activity.time}
-                        </span>
-                        {activity.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="size-3" />
-                            {activity.location}
-                          </span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
           </div>
         )}
       </section>

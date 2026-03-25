@@ -1,23 +1,24 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { mockGroups } from "@/lib/mock-data";
+import { useAuth } from "@/lib/auth-context";
+import {
+  addMemberToGroup,
+  getGroup,
+  getGroupMembers,
+  isGroupApiError,
+  type BackendGroup,
+  type GroupMember,
+} from "@/lib/group-api";
+import { isUserApiError, searchUsers, type DirectoryUser } from "@/lib/user-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Search, Mail, UserPlus, X } from "lucide-react";
-
-const registeredUsers = [
-  { id: "u2", name: "Anna Schmidt", email: "anna@example.com" },
-  { id: "u3", name: "Tom Weber", email: "tom@example.com" },
-  { id: "u4", name: "Lisa Braun", email: "lisa@example.com" },
-  { id: "u5", name: "Julia Meier", email: "julia@example.com" },
-  { id: "u6", name: "Lukas Fischer", email: "lukas@example.com" },
-];
 
 interface PendingMember {
   type: "registered" | "email";
@@ -33,14 +34,128 @@ export default function AddMemberPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const group = mockGroups.find((g) => g.id === id);
+  const { user, isLoggedIn, isLoading, accessToken } = useAuth();
+  const [group, setGroup] = useState<BackendGroup | null>(null);
+  const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
+  const [groupNotFound, setGroupNotFound] = useState(false);
+  const [groupError, setGroupError] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [emailInvite, setEmailInvite] = useState("");
   const [pending, setPending] = useState<PendingMember[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [searchResults, setSearchResults] = useState<DirectoryUser[]>([]);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitInfo, setSubmitInfo] = useState<string | null>(null);
 
-  if (!group) {
+  useEffect(() => {
+    if (!isLoggedIn || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadGroup = async () => {
+      try {
+        const [loadedGroup, loadedMembers] = await Promise.all([
+          getGroup(accessToken, id),
+          getGroupMembers(accessToken, id),
+        ]);
+        if (!cancelled) {
+          setGroup(loadedGroup);
+          setGroupMembers(loadedMembers);
+          setGroupNotFound(false);
+          setGroupError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setGroup(null);
+          setGroupMembers([]);
+          if (isGroupApiError(error) && error.status === 404) {
+            setGroupNotFound(true);
+            setGroupError(null);
+          } else {
+            setGroupNotFound(false);
+            setGroupError(
+              isGroupApiError(error) ? error.message : "Failed to load group."
+            );
+          }
+        }
+      }
+    };
+
+    void loadGroup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isLoggedIn, accessToken]);
+
+  useEffect(() => {
+    const query = search.trim();
+    if (!accessToken || query.length < 2) {
+      setSearchResults([]);
+      setSearchError(null);
+      setSearchingUsers(false);
+      return;
+    }
+
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setSearchingUsers(true);
+      try {
+        const users = await searchUsers(accessToken, query);
+        if (!cancelled) {
+          setSearchResults(users);
+          setSearchError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setSearchResults([]);
+          setSearchError(
+            isUserApiError(error) ? error.message : "Failed to search users."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setSearchingUsers(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [search, accessToken]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Please log in to add members.</p>
+      </div>
+    );
+  }
+
+  if (!accessToken) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+      </div>
+    );
+  }
+
+  if (groupNotFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-foreground">Group not found.</p>
@@ -48,18 +163,36 @@ export default function AddMemberPage({
     );
   }
 
-  const existingMemberIds = new Set(group.members.map((m) => m.userId));
-  const pendingIds = new Set(pending.map((p) => p.id ?? p.email));
+  if (groupError) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-destructive">{groupError}</p>
+      </div>
+    );
+  }
 
-  const filteredUsers = registeredUsers.filter(
+  if (!group) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Loading group...</p>
+      </div>
+    );
+  }
+
+  const existingMemberIds = new Set(groupMembers.map((member) => member.id));
+  const pendingIds = new Set(pending.map((p) => p.id ?? p.email));
+  const currentUserId = user?.id;
+
+  const filteredUsers = searchResults.filter(
     (u) =>
       !existingMemberIds.has(u.id) &&
+      (!currentUserId || u.id !== currentUserId) &&
       !pendingIds.has(u.id) &&
       (u.name.toLowerCase().includes(search.toLowerCase()) ||
         u.email.toLowerCase().includes(search.toLowerCase()))
   );
 
-  const addRegisteredUser = (user: (typeof registeredUsers)[0]) => {
+  const addRegisteredUser = (user: DirectoryUser) => {
     setPending((prev) => [
       ...prev,
       { type: "registered", id: user.id, name: user.name, email: user.email },
@@ -84,12 +217,55 @@ export default function AddMemberPage({
   };
 
   const handleSubmit = () => {
-    if (pending.length === 0) return;
-    setSubmitting(true);
-    // TODO: call backend API to add members / send invites
-    setTimeout(() => {
-      router.push(`/groups/${id}`);
-    }, 500);
+    void (async () => {
+      if (!accessToken) {
+        setSubmitError("Missing access token. Please log in again.");
+        return;
+      }
+      if (pending.length === 0) {
+        setSubmitError("Select at least one member.");
+        return;
+      }
+
+      const registeredUserIds = [
+        ...new Set(
+          pending
+            .filter((member) => member.type === "registered")
+            .map((member) => member.id)
+            .filter((memberId): memberId is string => !!memberId)
+        ),
+      ];
+
+      if (registeredUserIds.length === 0) {
+        setSubmitError("Only registered users can be assigned to Keycloak groups.");
+        return;
+      }
+
+      const emailInviteCount = pending.filter((member) => member.type === "email").length;
+
+      setSubmitting(true);
+      setSubmitError(null);
+      setSubmitInfo(null);
+      try {
+        await Promise.all(
+          registeredUserIds.map((userId) => addMemberToGroup(accessToken, id, userId))
+        );
+
+        if (emailInviteCount > 0) {
+          setSubmitInfo(
+            `${emailInviteCount} email invite${emailInviteCount > 1 ? "s were" : " was"} not processed yet.`
+          );
+        }
+
+        router.push(`/groups/${id}`);
+      } catch (error) {
+        setSubmitting(false);
+        setSubmitInfo(null);
+        setSubmitError(
+          isGroupApiError(error) ? error.message : "Failed to add members to the group."
+        );
+      }
+    })();
   };
 
   return (
@@ -121,7 +297,15 @@ export default function AddMemberPage({
             </div>
             {search && (
               <div className="max-h-48 overflow-y-auto rounded-md border border-border">
-                {filteredUsers.length === 0 ? (
+                {search.trim().length < 2 ? (
+                  <p className="p-3 text-sm text-muted-foreground">
+                    Type at least 2 characters to search.
+                  </p>
+                ) : searchingUsers ? (
+                  <p className="p-3 text-sm text-muted-foreground">Searching users...</p>
+                ) : searchError ? (
+                  <p className="p-3 text-sm text-destructive">{searchError}</p>
+                ) : filteredUsers.length === 0 ? (
                   <p className="p-3 text-sm text-muted-foreground">No users found.</p>
                 ) : (
                   filteredUsers.map((u) => (
@@ -208,6 +392,8 @@ export default function AddMemberPage({
                 Clear All
               </Button>
             </div>
+            {submitError && <p className="mt-3 text-sm text-destructive">{submitError}</p>}
+            {submitInfo && <p className="mt-3 text-sm text-muted-foreground">{submitInfo}</p>}
           </CardContent>
         </Card>
       )}

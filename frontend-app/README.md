@@ -24,6 +24,7 @@ The frontend uses `keycloak-js` and expects these public environment variables:
 NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
 NEXT_PUBLIC_KEYCLOAK_REALM=drumdibum
 NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=drumdibum-frontend
+NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 ```
 
 If these are not set, the defaults above are used.

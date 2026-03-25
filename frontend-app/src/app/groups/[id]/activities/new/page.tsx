@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { mockGroups } from "@/lib/mock-data";
+import { useAuth } from "@/lib/auth-context";
+import { getGroup, isGroupApiError, type BackendGroup } from "@/lib/group-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +19,10 @@ export default function NewActivityPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const group = mockGroups.find((g) => g.id === id);
+  const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const [group, setGroup] = useState<BackendGroup | null>(null);
+  const [groupNotFound, setGroupNotFound] = useState(false);
+  const [groupError, setGroupError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -27,10 +31,88 @@ export default function NewActivityPage({
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (!group) {
+  useEffect(() => {
+    if (!isLoggedIn || !accessToken) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadGroup = async () => {
+      try {
+        const loadedGroup = await getGroup(accessToken, id);
+        if (!cancelled) {
+          setGroup(loadedGroup);
+          setGroupNotFound(false);
+          setGroupError(null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setGroup(null);
+          if (isGroupApiError(error) && error.status === 404) {
+            setGroupNotFound(true);
+            setGroupError(null);
+          } else {
+            setGroupNotFound(false);
+            setGroupError(
+              isGroupApiError(error) ? error.message : "Failed to load group."
+            );
+          }
+        }
+      }
+    };
+
+    void loadGroup();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isLoggedIn, accessToken]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Please log in to create activities.</p>
+      </div>
+    );
+  }
+
+  if (!accessToken) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+      </div>
+    );
+  }
+
+  if (groupNotFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted-foreground">Group not found.</p>
+      </div>
+    );
+  }
+
+  if (groupError) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-destructive">{groupError}</p>
+      </div>
+    );
+  }
+
+  if (!group) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-muted-foreground">Loading group...</p>
       </div>
     );
   }
