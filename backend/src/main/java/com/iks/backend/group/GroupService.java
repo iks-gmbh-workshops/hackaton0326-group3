@@ -11,6 +11,9 @@ import com.iks.backend.user.UserLookupResult;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,8 +37,9 @@ public class GroupService {
             throw new GroupAlreadyExistsException(groupName);
         }
 
+        String ownerId = getCurrentUserId();
         String keycloakGroupId = keycloakService.createGroup(groupName);
-        AppGroup group = new AppGroup(keycloakGroupId, groupName, normalizedDescription);
+        AppGroup group = new AppGroup(keycloakGroupId, groupName, normalizedDescription, ownerId);
 
         try {
             return appGroupRepository.saveAndFlush(group);
@@ -199,5 +203,23 @@ public class GroupService {
             }
         }
         return null;
+    }
+
+    private String getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new InvalidGroupRequestException("User must be authenticated to create a group");
+        }
+
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof Jwt jwt) {
+            String userId = jwt.getSubject();
+            if (userId == null || userId.isBlank()) {
+                throw new InvalidGroupRequestException("Unable to determine user ID from authentication token");
+            }
+            return userId;
+        }
+
+        throw new InvalidGroupRequestException("Invalid authentication token");
     }
 }

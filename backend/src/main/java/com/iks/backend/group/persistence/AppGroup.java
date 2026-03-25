@@ -23,6 +23,9 @@ public class AppGroup {
     @Column(name = "description", length = 1000)
     private String description;
 
+    @Column(name = "owner_id", nullable = false, updatable = false, length = 64)
+    private String ownerId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -41,6 +44,13 @@ public class AppGroup {
         this.id = id;
         this.name = name;
         this.description = description;
+    }
+
+    public AppGroup(String id, String name, String description, String ownerId) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.ownerId = ownerId;
     }
 
     @PrePersist
@@ -93,5 +103,13 @@ public class AppGroup {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
     }
 }

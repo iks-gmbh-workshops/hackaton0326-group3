@@ -92,6 +92,7 @@ public class GroupController {
             group.getId(),
             group.getName(),
             group.getDescription(),
+            group.getOwnerId(),
             group.getCreatedAt(),
             group.getUpdatedAt()
         );

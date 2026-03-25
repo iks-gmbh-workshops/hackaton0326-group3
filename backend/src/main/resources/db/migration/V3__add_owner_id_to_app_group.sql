@@ -1,0 +1,1 @@
+ALTER TABLE app_group ADD COLUMN owner_id VARCHAR(64) NOT NULL DEFAULT 'unknown';

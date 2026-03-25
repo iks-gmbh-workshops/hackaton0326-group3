@@ -6,6 +6,7 @@ public record GroupResponse(
     String id,
     String name,
     String description,
+    String ownerId,
     Instant createdAt,
     Instant updatedAt
 ) {
