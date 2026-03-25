@@ -115,7 +115,7 @@ export interface BackendAttendance {
   userId: string;
   userName: string;
   userEmail: string;
-  status: "ACCEPTED" | "DECLINED";
+  status: "ACCEPTED" | "DECLINED" | "MAYBE";
   createdAt: string;
   updatedAt: string;
 }
@@ -131,7 +131,7 @@ export async function respondToActivity(
   token: string,
   groupId: string,
   activityId: string,
-  status: "ACCEPTED" | "DECLINED",
+  status: "ACCEPTED" | "DECLINED" | "MAYBE",
   userName: string,
   userEmail: string
 ) {

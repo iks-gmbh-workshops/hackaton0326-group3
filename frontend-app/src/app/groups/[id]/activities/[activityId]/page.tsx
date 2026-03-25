@@ -24,6 +24,7 @@ import {
   FileText,
   CheckCircle,
   XCircle,
+  HelpCircle,
   Users,
 } from "lucide-react";
 
@@ -97,7 +98,7 @@ export default function ActivityDetailPage({
     };
   }, [groupId, activityId, isLoggedIn, accessToken]);
 
-  const handleRsvp = async (status: "ACCEPTED" | "DECLINED") => {
+  const handleRsvp = async (status: "ACCEPTED" | "DECLINED" | "MAYBE") => {
     if (!accessToken || !user) return;
     setRsvpLoading(true);
     setRsvpError(null);
@@ -178,6 +179,7 @@ export default function ActivityDetailPage({
     : undefined;
   const currentStatus = currentUserAttendance?.status ?? null;
   const acceptedAttendees = attendees.filter((a) => a.status === "ACCEPTED");
+  const maybeAttendees = attendees.filter((a) => a.status === "MAYBE");
   const declinedAttendees = attendees.filter((a) => a.status === "DECLINED");
 
   return (
@@ -267,7 +269,7 @@ export default function ActivityDetailPage({
           <div className="mb-6">
             <p className="mb-3 text-sm text-muted-foreground">
               {currentStatus
-                ? `You have ${currentStatus === "ACCEPTED" ? "accepted" : "declined"} this activity. You can change your response until the event starts.`
+                ? `You have ${currentStatus === "ACCEPTED" ? "accepted" : currentStatus === "DECLINED" ? "declined" : "tentatively accepted"} this activity. You can change your response until the event starts.`
                 : "Will you be attending this activity?"}
             </p>
             <div className="flex gap-3">
@@ -279,6 +281,15 @@ export default function ActivityDetailPage({
               >
                 <CheckCircle className="mr-1.5 size-4" />
                 {currentStatus === "ACCEPTED" ? "Attending" : "Accept"}
+              </Button>
+              <Button
+                variant={currentStatus === "MAYBE" ? "secondary" : "outline"}
+                size="sm"
+                disabled={rsvpLoading}
+                onClick={() => handleRsvp("MAYBE")}
+              >
+                <HelpCircle className="mr-1.5 size-4" />
+                {currentStatus === "MAYBE" ? "Maybe attending" : "Maybe"}
               </Button>
               <Button
                 variant={currentStatus === "DECLINED" ? "destructive" : "outline"}
@@ -311,6 +322,23 @@ export default function ActivityDetailPage({
               {acceptedAttendees.map((a) => (
                 <li key={a.id} className="flex items-center gap-2 text-sm">
                   <CheckCircle className="size-3.5 text-green-600 dark:text-green-400" />
+                  <span>{a.userName}</span>
+                  <span className="text-muted-foreground">({a.userEmail})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {maybeAttendees.length > 0 && (
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-medium text-yellow-700 dark:text-yellow-400">
+              Maybe ({maybeAttendees.length})
+            </h3>
+            <ul className="space-y-1">
+              {maybeAttendees.map((a) => (
+                <li key={a.id} className="flex items-center gap-2 text-sm">
+                  <HelpCircle className="size-3.5 text-yellow-600 dark:text-yellow-400" />
                   <span>{a.userName}</span>
                   <span className="text-muted-foreground">({a.userEmail})</span>
                 </li>

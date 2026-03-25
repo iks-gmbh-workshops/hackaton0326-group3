@@ -32,7 +32,7 @@ export interface GroupMember {
   joinedAt: string;
 }
 
-export type RSVPStatus = "pending" | "accepted" | "declined";
+export type RSVPStatus = "pending" | "accepted" | "declined" | "maybe";
 
 export interface Activity {
   id: string;

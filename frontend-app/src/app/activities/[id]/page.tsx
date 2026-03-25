@@ -35,6 +35,8 @@ function statusBadgeVariant(status: RSVPStatus) {
       return "default" as const;
     case "declined":
       return "destructive" as const;
+    case "maybe":
+      return "secondary" as const;
     default:
       return "outline" as const;
   }
@@ -64,6 +66,7 @@ export default function ActivityDetailPage({
   const myParticipant = participants.find((p) => p.userId === user?.id);
   const isCreator = activity.createdBy === user?.id;
   const accepted = participants.filter((p) => p.status === "accepted").length;
+  const maybe = participants.filter((p) => p.status === "maybe").length;
   const declined = participants.filter((p) => p.status === "declined").length;
   const pending = participants.filter((p) => p.status === "pending").length;
 
@@ -137,6 +140,13 @@ export default function ActivityDetailPage({
               </Button>
               <Button
                 size="sm"
+                variant={myParticipant.status === "maybe" ? "secondary" : "outline"}
+                onClick={() => handleRSVP("maybe")}
+              >
+                Maybe
+              </Button>
+              <Button
+                size="sm"
                 variant={myParticipant.status === "declined" ? "destructive" : "outline"}
                 onClick={() => handleRSVP("declined")}
               >
@@ -162,6 +172,10 @@ export default function ActivityDetailPage({
           <span className="flex items-center gap-1">
             <span className="inline-block size-2 rounded-full bg-primary" />
             {accepted} accepted
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block size-2 rounded-full bg-yellow-500" />
+            {maybe} maybe
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block size-2 rounded-full bg-destructive" />
