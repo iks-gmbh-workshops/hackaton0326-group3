@@ -1,18 +1,31 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
   getActivity,
   isActivityApiError,
+  listAttendees,
+  respondToActivity,
   type BackendActivity,
+  type BackendAttendance,
 } from "@/lib/activity-api";
 import { getGroup, type BackendGroup } from "@/lib/group-api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CalendarDays, Clock, MapPin, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Clock,
+  MapPin,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Users,
+} from "lucide-react";
 
 export default function ActivityDetailPage({
   params,
@@ -20,11 +33,24 @@ export default function ActivityDetailPage({
   params: Promise<{ id: string; activityId: string }>;
 }) {
   const { id: groupId, activityId } = use(params);
-  const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const { user, isLoggedIn, isLoading, accessToken } = useAuth();
   const [activity, setActivity] = useState<BackendActivity | null>(null);
   const [group, setGroup] = useState<BackendGroup | null>(null);
+  const [attendees, setAttendees] = useState<BackendAttendance[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [rsvpError, setRsvpError] = useState<string | null>(null);
+
+  const loadAttendees = useCallback(async () => {
+    if (!accessToken) return;
+    try {
+      const loaded = await listAttendees(accessToken, groupId, activityId);
+      setAttendees(loaded);
+    } catch {
+      // silently ignore attendance load errors
+    }
+  }, [accessToken, groupId, activityId]);
 
   useEffect(() => {
     if (!isLoggedIn || !accessToken) {
@@ -35,13 +61,15 @@ export default function ActivityDetailPage({
 
     const loadData = async () => {
       try {
-        const [loadedActivity, loadedGroup] = await Promise.all([
+        const [loadedActivity, loadedGroup, loadedAttendees] = await Promise.all([
           getActivity(accessToken, groupId, activityId),
           getGroup(accessToken, groupId),
+          listAttendees(accessToken, groupId, activityId),
         ]);
         if (!cancelled) {
           setActivity(loadedActivity);
           setGroup(loadedGroup);
+          setAttendees(loadedAttendees);
           setLoadError(null);
           setNotFound(false);
         }
@@ -68,6 +96,29 @@ export default function ActivityDetailPage({
       cancelled = true;
     };
   }, [groupId, activityId, isLoggedIn, accessToken]);
+
+  const handleRsvp = async (status: "ACCEPTED" | "DECLINED") => {
+    if (!accessToken || !user) return;
+    setRsvpLoading(true);
+    setRsvpError(null);
+    try {
+      await respondToActivity(
+        accessToken,
+        groupId,
+        activityId,
+        status,
+        user.name,
+        user.email
+      );
+      await loadAttendees();
+    } catch (error) {
+      setRsvpError(
+        isActivityApiError(error) ? error.message : "Failed to update attendance."
+      );
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -120,6 +171,14 @@ export default function ActivityDetailPage({
     hour: "2-digit",
     minute: "2-digit",
   });
+
+  const isPast = scheduledDate < new Date();
+  const currentUserAttendance = user
+    ? attendees.find((a) => a.userId === user.id)
+    : undefined;
+  const currentStatus = currentUserAttendance?.status ?? null;
+  const acceptedAttendees = attendees.filter((a) => a.status === "ACCEPTED");
+  const declinedAttendees = attendees.filter((a) => a.status === "DECLINED");
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -195,6 +254,94 @@ export default function ActivityDetailPage({
           </section>
         </>
       )}
+
+      <Separator className="my-6" />
+
+      <section>
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+          <Users className="size-4" />
+          Attendance
+        </h2>
+
+        {!isPast && (
+          <div className="mb-6">
+            <p className="mb-3 text-sm text-muted-foreground">
+              {currentStatus
+                ? `You have ${currentStatus === "ACCEPTED" ? "accepted" : "declined"} this activity. You can change your response until the event starts.`
+                : "Will you be attending this activity?"}
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant={currentStatus === "ACCEPTED" ? "default" : "outline"}
+                size="sm"
+                disabled={rsvpLoading}
+                onClick={() => handleRsvp("ACCEPTED")}
+              >
+                <CheckCircle className="mr-1.5 size-4" />
+                {currentStatus === "ACCEPTED" ? "Attending" : "Accept"}
+              </Button>
+              <Button
+                variant={currentStatus === "DECLINED" ? "destructive" : "outline"}
+                size="sm"
+                disabled={rsvpLoading}
+                onClick={() => handleRsvp("DECLINED")}
+              >
+                <XCircle className="mr-1.5 size-4" />
+                {currentStatus === "DECLINED" ? "Not attending" : "Decline"}
+              </Button>
+            </div>
+            {rsvpError && (
+              <p className="mt-2 text-sm text-destructive">{rsvpError}</p>
+            )}
+          </div>
+        )}
+
+        {isPast && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            This activity has already started. Attendance can no longer be changed.
+          </p>
+        )}
+
+        {acceptedAttendees.length > 0 && (
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-medium text-green-700 dark:text-green-400">
+              Attending ({acceptedAttendees.length})
+            </h3>
+            <ul className="space-y-1">
+              {acceptedAttendees.map((a) => (
+                <li key={a.id} className="flex items-center gap-2 text-sm">
+                  <CheckCircle className="size-3.5 text-green-600 dark:text-green-400" />
+                  <span>{a.userName}</span>
+                  <span className="text-muted-foreground">({a.userEmail})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {declinedAttendees.length > 0 && (
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-medium text-red-700 dark:text-red-400">
+              Not attending ({declinedAttendees.length})
+            </h3>
+            <ul className="space-y-1">
+              {declinedAttendees.map((a) => (
+                <li key={a.id} className="flex items-center gap-2 text-sm">
+                  <XCircle className="size-3.5 text-red-600 dark:text-red-400" />
+                  <span>{a.userName}</span>
+                  <span className="text-muted-foreground">({a.userEmail})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {attendees.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No one has responded yet.
+          </p>
+        )}
+      </section>
     </div>
   );
 }

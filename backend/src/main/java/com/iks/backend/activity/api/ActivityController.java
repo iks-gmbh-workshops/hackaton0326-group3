@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.iks.backend.activity.ActivityService;
 import com.iks.backend.activity.persistence.Activity;
+import com.iks.backend.activity.persistence.ActivityAttendance;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -103,6 +104,42 @@ public class ActivityController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/{activityId}/attendance")
+    public AttendanceResponse respondToActivity(
+        @PathVariable String groupId,
+        @PathVariable String activityId,
+        @RequestBody AttendanceRequest request
+    ) {
+        Activity activity = activityService.getActivity(activityId);
+        if (!activity.getGroupId().equals(groupId)) {
+            throw new IllegalArgumentException("Activity does not belong to this group");
+        }
+
+        String status = request == null ? null : request.status();
+        String userName = request == null ? null : request.userName();
+        String userEmail = request == null ? null : request.userEmail();
+
+        ActivityAttendance attendance = activityService.respondToActivity(
+            activityId, status, userName, userEmail
+        );
+        return toAttendanceResponse(attendance);
+    }
+
+    @GetMapping("/{activityId}/attendance")
+    public List<AttendanceResponse> listAttendees(
+        @PathVariable String groupId,
+        @PathVariable String activityId
+    ) {
+        Activity activity = activityService.getActivity(activityId);
+        if (!activity.getGroupId().equals(groupId)) {
+            throw new IllegalArgumentException("Activity does not belong to this group");
+        }
+
+        return activityService.listAttendees(activityId).stream()
+            .map(ActivityController::toAttendanceResponse)
+            .toList();
+    }
+
     private static ActivityResponse toActivityResponse(Activity activity) {
         return new ActivityResponse(
             activity.getId(),
@@ -113,6 +150,19 @@ public class ActivityController {
             activity.getLocation(),
             activity.getCreatedAt(),
             activity.getUpdatedAt()
+        );
+    }
+
+    private static AttendanceResponse toAttendanceResponse(ActivityAttendance attendance) {
+        return new AttendanceResponse(
+            attendance.getId(),
+            attendance.getActivityId(),
+            attendance.getUserId(),
+            attendance.getUserName(),
+            attendance.getUserEmail(),
+            attendance.getStatus().name(),
+            attendance.getCreatedAt(),
+            attendance.getUpdatedAt()
         );
     }
 }

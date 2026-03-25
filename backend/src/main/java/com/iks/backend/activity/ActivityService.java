@@ -6,7 +6,10 @@ import java.time.LocalTime;
 import java.util.List;
 
 import com.iks.backend.activity.persistence.Activity;
+import com.iks.backend.activity.persistence.ActivityAttendance;
+import com.iks.backend.activity.persistence.ActivityAttendanceRepository;
 import com.iks.backend.activity.persistence.ActivityRepository;
+import com.iks.backend.activity.persistence.AttendanceStatus;
 import com.iks.backend.group.GroupOwnershipException;
 import com.iks.backend.group.GroupService;
 import com.iks.backend.group.persistence.AppGroup;
@@ -21,10 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class ActivityService {
 
     private final ActivityRepository activityRepository;
+    private final ActivityAttendanceRepository attendanceRepository;
     private final GroupService groupService;
 
-    public ActivityService(ActivityRepository activityRepository, GroupService groupService) {
+    public ActivityService(ActivityRepository activityRepository, ActivityAttendanceRepository attendanceRepository, GroupService groupService) {
         this.activityRepository = activityRepository;
+        this.attendanceRepository = attendanceRepository;
         this.groupService = groupService;
     }
 
@@ -159,6 +164,51 @@ public class ActivityService {
         }
 
         return scheduledDateTime;
+    }
+
+    @Transactional
+    public ActivityAttendance respondToActivity(String activityId, String statusStr, String userName, String userEmail) {
+        Activity activity = getActivity(activityId);
+
+        if (activity.getScheduledAt().isBefore(LocalDateTime.now())) {
+            throw new InvalidActivityRequestException("Cannot change attendance after the activity has started");
+        }
+
+        AttendanceStatus status;
+        try {
+            status = AttendanceStatus.valueOf(statusStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new InvalidActivityRequestException("Invalid attendance status: " + statusStr);
+        }
+
+        String currentUserId = getCurrentUserId();
+
+        if (userName == null || userName.isBlank()) {
+            throw new InvalidActivityRequestException("User name is required");
+        }
+        if (userEmail == null || userEmail.isBlank()) {
+            throw new InvalidActivityRequestException("User email is required");
+        }
+
+        return attendanceRepository.findByActivityIdAndUserId(activityId, currentUserId)
+            .map(existing -> {
+                existing.setStatus(status);
+                existing.setUserName(userName.trim());
+                existing.setUserEmail(userEmail.trim());
+                return attendanceRepository.saveAndFlush(existing);
+            })
+            .orElseGet(() -> {
+                ActivityAttendance attendance = new ActivityAttendance(
+                    activityId, currentUserId, userName.trim(), userEmail.trim(), status
+                );
+                return attendanceRepository.saveAndFlush(attendance);
+            });
+    }
+
+    @Transactional(readOnly = true)
+    public List<ActivityAttendance> listAttendees(String activityId) {
+        getActivity(activityId);
+        return attendanceRepository.findByActivityId(activityId);
     }
 
     private String getCurrentUserId() {

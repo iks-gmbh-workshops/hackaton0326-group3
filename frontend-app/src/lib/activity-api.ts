@@ -109,6 +109,42 @@ export async function deleteActivity(token: string, groupId: string, activityId:
   });
 }
 
+export interface BackendAttendance {
+  id: string;
+  activityId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  status: "ACCEPTED" | "DECLINED";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listAttendees(token: string, groupId: string, activityId: string) {
+  return request<BackendAttendance[]>(
+    `/api/groups/${groupId}/activities/${activityId}/attendance`,
+    token
+  );
+}
+
+export async function respondToActivity(
+  token: string,
+  groupId: string,
+  activityId: string,
+  status: "ACCEPTED" | "DECLINED",
+  userName: string,
+  userEmail: string
+) {
+  return request<BackendAttendance>(
+    `/api/groups/${groupId}/activities/${activityId}/attendance`,
+    token,
+    {
+      method: "PUT",
+      body: JSON.stringify({ status, userName, userEmail }),
+    }
+  );
+}
+
 export function isActivityApiError(error: unknown): error is ActivityApiError {
   return error instanceof ActivityApiError;
 }
