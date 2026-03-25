@@ -244,23 +244,32 @@ export default function GroupDetailPage({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{member.name}</p>
+                    <p className="truncate text-sm font-medium">
+                      {member.name}
+                      {member.id === group.ownerId && (
+                        <Badge variant="default" className="ml-2 text-[10px] px-1.5 py-0">
+                          Owner
+                        </Badge>
+                      )}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {member.email}
                     </p>
                   </div>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-muted-foreground hover:text-destructive"
-                    disabled={removingMemberId === member.id}
-                    onClick={() => {
-                      handleRemoveMember(member.id);
-                    }}
-                    title="Remove member"
-                  >
-                    <UserMinus className="size-4" />
-                  </Button>
+                  {member.id !== group.ownerId && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-muted-foreground hover:text-destructive"
+                      disabled={removingMemberId === member.id}
+                      onClick={() => {
+                        handleRemoveMember(member.id);
+                      }}
+                      title="Remove member"
+                    >
+                      <UserMinus className="size-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
