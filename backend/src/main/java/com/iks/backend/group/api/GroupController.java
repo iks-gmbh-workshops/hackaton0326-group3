@@ -8,6 +8,7 @@ import com.iks.backend.group.persistence.AppGroup;
 import com.iks.backend.user.UserLookupResult;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,6 +62,15 @@ public class GroupController {
     ) {
         String requestedUserId = request == null ? null : request.userId();
         groupService.addUserToGroup(groupId, requestedUserId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{groupId}/members/{userId}")
+    public ResponseEntity<Void> removeMember(
+        @PathVariable String groupId,
+        @PathVariable String userId
+    ) {
+        groupService.removeUserFromGroup(groupId, userId);
         return ResponseEntity.noContent().build();
     }
 

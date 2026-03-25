@@ -66,6 +66,13 @@ public class GroupService {
     }
 
     @Transactional(readOnly = true)
+    public void removeUserFromGroup(String groupId, String rawUserId) {
+        getGroup(groupId);
+        String userId = normalizeUserId(rawUserId);
+        keycloakService.removeUserFromGroup(userId, groupId);
+    }
+
+    @Transactional(readOnly = true)
     public List<UserLookupResult> listGroupMembers(String groupId) {
         getGroup(groupId);
         return keycloakService.listGroupMembers(groupId).stream()

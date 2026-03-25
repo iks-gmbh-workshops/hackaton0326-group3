@@ -106,6 +106,33 @@ public class KeycloakAdminClientService implements KeycloakService {
     }
 
     @Override
+    public void removeUserFromGroup(String userId, String groupId) {
+        try (Keycloak keycloak = buildAdminClient()) {
+            RealmResource realm = keycloak.realm(properties.getRealm());
+
+            UserResource userResource = realm.users().get(userId);
+            try {
+                userResource.toRepresentation();
+            } catch (NotFoundException notFound) {
+                throw new UserNotFoundException(userId);
+            }
+
+            GroupResource groupResource = realm.groups().group(groupId);
+            try {
+                groupResource.toRepresentation();
+            } catch (NotFoundException notFound) {
+                throw new GroupNotFoundException(groupId);
+            }
+
+            userResource.leaveGroup(groupId);
+        } catch (UserNotFoundException | GroupNotFoundException missingResource) {
+            throw missingResource;
+        } catch (RuntimeException runtimeException) {
+            throw new KeycloakServiceException("Failed to remove user from Keycloak group", runtimeException);
+        }
+    }
+
+    @Override
     public List<UserRepresentation> listGroupMembers(String groupId) {
         try (Keycloak keycloak = buildAdminClient()) {
             RealmResource realm = keycloak.realm(properties.getRealm());

@@ -12,5 +12,7 @@ public interface KeycloakService {
 
     void addUserToGroup(String userId, String groupId);
 
+    void removeUserFromGroup(String userId, String groupId);
+
     List<UserRepresentation> listGroupMembers(String groupId);
 }
