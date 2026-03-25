@@ -4,7 +4,6 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { mockActivities } from "@/lib/mock-data";
 import {
   removeMemberFromGroup,
   deleteGroup,
@@ -14,6 +13,7 @@ import {
   type BackendGroup,
   type GroupMember,
 } from "@/lib/group-api";
+import { listGroupActivities, type BackendActivity } from "@/lib/activity-api";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,7 @@ export default function GroupDetailPage({
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[] | null>(null);
+  const [activities, setActivities] = useState<BackendActivity[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [memberActionError, setMemberActionError] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
@@ -55,13 +56,15 @@ export default function GroupDetailPage({
 
     const loadGroup = async () => {
       try {
-        const [loadedGroup, loadedMembers] = await Promise.all([
+        const [loadedGroup, loadedMembers, loadedActivities] = await Promise.all([
           getGroup(accessToken, id),
           getGroupMembers(accessToken, id),
+          listGroupActivities(accessToken, id),
         ]);
         if (!cancelled) {
           setGroup(loadedGroup);
           setMembers(loadedMembers);
+          setActivities(loadedActivities);
           setLoadError(null);
           setMemberActionError(null);
           setNotFound(false);
@@ -70,6 +73,7 @@ export default function GroupDetailPage({
         if (!cancelled) {
           setGroup(null);
           setMembers(null);
+          setActivities(null);
           if (isGroupApiError(error) && error.status === 404) {
             setNotFound(true);
             setLoadError(null);
@@ -160,8 +164,8 @@ export default function GroupDetailPage({
     })();
   };
 
-  const activities = mockActivities.filter((activity) => activity.groupId === group.id);
   const memberCount = members?.length ?? 0;
+  const activityCount = activities?.length ?? 0;
 
   const handleRemoveMember = (memberId: string) => {
     void (async () => {
@@ -333,44 +337,62 @@ export default function GroupDetailPage({
         <section className="lg:col-span-2">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             <CalendarDays className="size-4" />
-            Activities ({activities.length})
+            Activities ({activityCount})
           </h2>
-          {activities.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No activities yet.</p>
+          {activities === null ? (
+            <Card>
+              <CardContent className="py-5 text-sm text-muted-foreground">
+                Loading activities...
+              </CardContent>
+            </Card>
+          ) : activities.length === 0 ? (
+            <Card>
+              <CardContent className="py-5 text-sm text-muted-foreground">
+                No activities yet.
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
-              {activities.map((activity) => (
-                <Link key={activity.id} href={`/activities/${activity.id}`}>
-                  <Card className="transition-colors hover:border-primary/40">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        {activity.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {activity.description}
-                      </p>
-                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CalendarDays className="size-3" />
-                          {activity.date}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="size-3" />
-                          {activity.time}
-                        </span>
-                        {activity.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="size-3" />
-                            {activity.location}
-                          </span>
+              {activities.map((activity) => {
+                const scheduledDate = new Date(activity.scheduledAt);
+                const dateStr = scheduledDate.toLocaleDateString();
+                const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                return (
+                  <Link key={activity.id} href={`/activities/${activity.id}`}>
+                    <Card className="transition-colors hover:border-primary/40">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {activity.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {activity.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {activity.description}
+                          </p>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="size-3" />
+                            {dateStr}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="size-3" />
+                            {timeStr}
+                          </span>
+                          {activity.location && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="size-3" />
+                              {activity.location}
+                            </span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </section>

@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { getGroup, isGroupApiError, type BackendGroup } from "@/lib/group-api";
+import { createActivity, isActivityApiError } from "@/lib/activity-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,9 @@ export default function NewActivityPage({
   const [time, setTime] = useState("");
   const [location, setLocation] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isLoggedIn || !accessToken) {
@@ -117,15 +121,75 @@ export default function NewActivityPage({
     );
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateDateTime = (dateValue: string, timeValue: string): string | null => {
+    if (!dateValue || !timeValue) return null;
+
+    try {
+      const selectedDate = new Date(`${dateValue}T${timeValue}`);
+      
+      if (isNaN(selectedDate.getTime())) {
+        return "Invalid date or time. Please check that the date exists (e.g., February only has 28/29 days).";
+      }
+
+      const now = new Date();
+      if (selectedDate < now) {
+        return "Activity cannot be scheduled in the past.";
+      }
+
+      return null;
+    } catch {
+      return "Invalid date or time format.";
+    }
+  };
+
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    const validationError = validateDateTime(newDate, time);
+    setDateError(validationError);
+  };
+
+  const handleTimeChange = (newTime: string) => {
+    setTime(newTime);
+    const validationError = validateDateTime(date, newTime);
+    setDateError(validationError);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !date || !time) return;
+    if (!accessToken) {
+      setError("You must be logged in to create an activity.");
+      return;
+    }
+
+    const validationError = validateDateTime(date, time);
+    if (validationError) {
+      setDateError(validationError);
+      return;
+    }
 
     setSubmitting(true);
-    // TODO: call backend API to create activity
-    setTimeout(() => {
+    setError(null);
+    setDateError(null);
+    try {
+      await createActivity(
+        accessToken,
+        id,
+        title.trim(),
+        description.trim() || undefined,
+        date,
+        time,
+        location.trim() || undefined
+      );
       router.push(`/groups/${id}`);
-    }, 500);
+    } catch (apiError) {
+      if (isActivityApiError(apiError)) {
+        setError(apiError.message);
+      } else {
+        setError("Failed to create activity. Please try again.");
+      }
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -168,11 +232,22 @@ export default function NewActivityPage({
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
                 <Input
+                  ref={dateInputRef}
                   id="date"
                   type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(e) => handleDateChange(e.target.value)}
                   required
+                  onKeyDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    try {
+                      dateInputRef.current?.showPicker();
+                    } catch (e) {
+                      // Fallback for browsers that don't support showPicker
+                      dateInputRef.current?.focus();
+                    }
+                  }}
+                  className={dateError ? "border-destructive" : ""}
                 />
               </div>
               <div className="space-y-2">
@@ -181,11 +256,15 @@ export default function NewActivityPage({
                   id="time"
                   type="time"
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  onChange={(e) => handleTimeChange(e.target.value)}
                   required
+                  className={dateError ? "border-destructive" : ""}
                 />
               </div>
             </div>
+            {dateError && (
+              <p className="text-sm text-destructive">{dateError}</p>
+            )}
             <div className="space-y-2">
               <Label htmlFor="location">Location (optional)</Label>
               <Input
@@ -196,7 +275,7 @@ export default function NewActivityPage({
               />
             </div>
             <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={submitting || !title.trim() || !date || !time}>
+              <Button type="submit" disabled={submitting || !title.trim() || !date || !time || !!dateError}>
                 {submitting ? "Creating…" : "Create Activity"}
               </Button>
               <Button
@@ -207,6 +286,7 @@ export default function NewActivityPage({
                 Cancel
               </Button>
             </div>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </form>
         </CardContent>
       </Card>
