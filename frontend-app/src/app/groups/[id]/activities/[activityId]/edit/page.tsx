@@ -4,7 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { getGroup, isGroupApiError, type BackendGroup } from "@/lib/group-api";
+import { getGroup, type BackendGroup } from "@/lib/group-api";
 import { getActivity, updateActivity, isActivityApiError, type BackendActivity } from "@/lib/activity-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,7 +90,7 @@ export default function EditActivityPage({
     return () => {
       cancelled = true;
     };
-  }, [groupId, activityId, isLoggedIn, accessToken]);
+  }, [groupId, activityId, isLoggedIn, accessToken, t]);
 
   if (isLoading) {
     return (
@@ -279,7 +279,7 @@ export default function EditActivityPage({
                   onClick={() => {
                     try {
                       dateInputRef.current?.showPicker();
-                    } catch (e) {
+                    } catch {
                       dateInputRef.current?.focus();
                     }
                   }}

@@ -7,7 +7,7 @@ import { mockActivities } from "@/lib/mock-data";
 import type { RSVPStatus } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -64,7 +64,6 @@ export default function ActivityDetailPage({
   }
 
   const myParticipant = participants.find((p) => p.userId === user?.id);
-  const isCreator = activity.createdBy === user?.id;
   const accepted = participants.filter((p) => p.status === "accepted").length;
   const maybe = participants.filter((p) => p.status === "maybe").length;
   const declined = participants.filter((p) => p.status === "declined").length;

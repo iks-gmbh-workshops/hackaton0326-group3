@@ -100,7 +100,7 @@ export default function GroupDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [id, isLoggedIn, accessToken]);
+  }, [id, isLoggedIn, accessToken, t]);
 
   if (isLoading) {
     return (

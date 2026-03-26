@@ -2,7 +2,7 @@
 
 import { NextIntlClientProvider } from "next-intl";
 import { useLocale } from "@/lib/locale-context";
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import enMessages from "../../messages/en.json";
 import deMessages from "../../messages/de.json";

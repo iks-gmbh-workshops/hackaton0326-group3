@@ -245,7 +245,7 @@ export default function NewActivityPage({
                   onClick={() => {
                     try {
                       dateInputRef.current?.showPicker();
-                    } catch (e) {
+                    } catch {
                       // Fallback for browsers that don't support showPicker
                       dateInputRef.current?.focus();
                     }

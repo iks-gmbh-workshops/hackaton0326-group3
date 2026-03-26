@@ -14,7 +14,7 @@ import {
 import { Bell, LogOut, User, Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useLocale, type AppLocale } from "@/lib/locale-context";
+import { useLocale } from "@/lib/locale-context";
 
 function getInitials(name: string) {
   return name

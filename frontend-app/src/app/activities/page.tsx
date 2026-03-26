@@ -56,13 +56,13 @@ export default function ActivitiesPage() {
         setError(null);
         const data = await listMyActivities(accessToken);
         setActivities(data);
-      } catch (err) {
+      } catch {
         setError(t("failedToLoad"));
       } finally {
         setLoadingActivities(false);
       }
     })();
-  }, [accessToken]);
+  }, [accessToken, t]);
 
   if (isLoading) {
     return (

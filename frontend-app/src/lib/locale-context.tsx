@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 
 export type AppLocale = "en" | "de";
 
@@ -28,19 +34,22 @@ interface LocaleContextValue {
   setLocale: (locale: AppLocale) => void;
 }
 
+function subscribeToHydration() {
+  return () => {};
+}
+
+function useIsHydrated() {
+  return useSyncExternalStore(subscribeToHydration, () => true, () => false);
+}
+
 const LocaleContext = createContext<LocaleContextValue>({
   locale: "en",
   setLocale: () => {},
 });
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<AppLocale>("en");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setLocaleState(detectLocale());
-    setMounted(true);
-  }, []);
+  const [locale, setLocaleState] = useState<AppLocale>(() => detectLocale());
+  const isHydrated = useIsHydrated();
 
   const setLocale = (newLocale: AppLocale) => {
     setLocaleState(newLocale);
@@ -48,7 +57,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = newLocale;
   };
 
-  if (!mounted) {
+  if (!isHydrated) {
     return null;
   }
 

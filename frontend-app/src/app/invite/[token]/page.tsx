@@ -16,6 +16,7 @@ export default function InvitePage({
   const router = useRouter();
   const [status, setStatus] = useState<"pending" | "accepting" | "declining" | "done">("pending");
   const t = useTranslations("invite");
+  const hasToken = token.trim().length > 0;
 
   // TODO: validate token against backend and fetch group info
   const groupName = "Weekend Hikers";
@@ -74,7 +75,7 @@ export default function InvitePage({
           <div className="flex justify-center gap-3 pt-2">
             <Button
               onClick={handleAccept}
-              disabled={status !== "pending"}
+              disabled={status !== "pending" || !hasToken}
             >
               <Check className="mr-1 size-4" />
               {status === "accepting" ? t("joining") : t("acceptAndJoin")}
@@ -82,7 +83,7 @@ export default function InvitePage({
             <Button
               variant="outline"
               onClick={handleDecline}
-              disabled={status !== "pending"}
+              disabled={status !== "pending" || !hasToken}
             >
               <X className="mr-1 size-4" />
               {status === "declining" ? t("declining") : t("decline")}

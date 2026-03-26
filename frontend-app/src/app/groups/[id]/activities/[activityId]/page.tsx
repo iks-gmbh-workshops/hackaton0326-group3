@@ -107,7 +107,7 @@ export default function ActivityDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [groupId, activityId, isLoggedIn, accessToken]);
+  }, [groupId, activityId, isLoggedIn, accessToken, t]);
 
   const handleRsvp = async (status: "ACCEPTED" | "DECLINED" | "MAYBE") => {
     if (!accessToken || !user) return;
