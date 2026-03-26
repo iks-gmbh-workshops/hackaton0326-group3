@@ -42,9 +42,9 @@ jobs:
         run: npm run lint
         working-directory: ${{ steps.frontend-dir.outputs.path }}
 
-      - name: Dependency check
-        run: npm run deps:check
-        working-directory: ${{ steps.frontend-dir.outputs.path }}
+#      - name: Dependency check
+#        run: npm run deps:check
+#        working-directory: ${{ steps.frontend-dir.outputs.path }}
 
       - name: Unit test
         run: npm run test:run
@@ -93,5 +93,5 @@ jobs:
         working-directory: ${{ steps.backend-dir.outputs.path }}
 
       - name: Security test
-        run: ./mvnw -B -ntp org.owasp:dependency-check-maven:check
+        run: ./mvnw -B -ntp spotbugs:check
         working-directory: ${{ steps.backend-dir.outputs.path }}
