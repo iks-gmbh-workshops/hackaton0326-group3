@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+  <Match>
+    <Bug pattern="SPRING_ENDPOINT" />
+    <Class name="~com\.iks\.backend\..*\.api\..*Controller" />
+  </Match>
+
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP2" />
+    <Class name="~com\.iks\.backend\..*(Service|Controller)" />
+    <Method name="&lt;init&gt;" />
+  </Match>
+
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2" />
+    <Class name="com.iks.backend.activity.ActivityService$ActivityWithStatus" />
+  </Match>
+
+  <Match>
+    <Bug pattern="THROWS_METHOD_THROWS_RUNTIMEEXCEPTION,IMPROPER_UNICODE" />
+    <Class name="com.iks.backend.keycloak.KeycloakAdminClientService" />
+  </Match>
+</FindBugsFilter>

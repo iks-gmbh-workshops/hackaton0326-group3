@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.context.annotation.Bean;
@@ -27,26 +28,30 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/**"))
-        .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
-        .cors(Customizer.withDefaults())
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/actuator/health", "/h2-console/**")
-                    .permitAll()
-                    .requestMatchers(HttpMethod.OPTIONS, "/api/**")
-                    .permitAll()
-                    .requestMatchers("/api/**")
-                    .hasRole("REGISTERED_USER")
-                    .anyRequest()
-                    .authenticated())
-        .oauth2Login(Customizer.withDefaults())
-        .oauth2ResourceServer(
-            oauth2 ->
-                oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
+  SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    try {
+      http.csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**", "/api/**"))
+          .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
+          .cors(Customizer.withDefaults())
+          .authorizeHttpRequests(
+              auth ->
+                  auth.requestMatchers("/actuator/health", "/h2-console/**")
+                      .permitAll()
+                      .requestMatchers(HttpMethod.OPTIONS, "/api/**")
+                      .permitAll()
+                      .requestMatchers("/api/**")
+                      .hasRole("REGISTERED_USER")
+                      .anyRequest()
+                      .authenticated())
+          .oauth2Login(Customizer.withDefaults())
+          .oauth2ResourceServer(
+              oauth2 ->
+                  oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
 
-    return http.build();
+      return http.build();
+    } catch (Exception exception) {
+      throw new IllegalStateException("Failed to build security filter chain", exception);
+    }
   }
 
   @Bean
@@ -112,7 +117,7 @@ public class SecurityConfig {
       Set<GrantedAuthority> authorities = new LinkedHashSet<>();
       for (Object role : roles) {
         if (role instanceof String roleName && !roleName.isBlank()) {
-          authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase()));
+          authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase(Locale.ROOT)));
         }
       }
       return authorities;
@@ -131,7 +136,7 @@ public class SecurityConfig {
       Set<GrantedAuthority> authorities = new LinkedHashSet<>();
       for (Object role : roles) {
         if (role instanceof String roleName && !roleName.isBlank()) {
-          authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase()));
+          authorities.add(new SimpleGrantedAuthority("ROLE_" + roleName.toUpperCase(Locale.ROOT)));
         }
       }
       return authorities;

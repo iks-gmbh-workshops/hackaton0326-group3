@@ -82,8 +82,7 @@ public class ActivityNotificationService {
             .toList();
 
     log.info(
-        "Sending activity creation notification for '{}' to {} group members (creator excluded)",
-        activity.getTitle(),
+        "Sending activity creation notification to {} group members (creator excluded)",
         emails.size());
     emailService.sendEmailToMany(emails, subject, htmlBody);
   }
@@ -122,11 +121,7 @@ public class ActivityNotificationService {
             .distinct()
             .toList();
 
-    log.info(
-        "Sending attendance update notification for '{}' ({}) to {} group members",
-        activity.getTitle(),
-        statusLabel,
-        emails.size());
+    log.info("Sending attendance update notification to {} group members", emails.size());
     emailService.sendEmailToMany(emails, subject, htmlBody);
   }
 

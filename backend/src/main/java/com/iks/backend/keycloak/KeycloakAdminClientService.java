@@ -5,8 +5,10 @@ import com.iks.backend.group.GroupNotFoundException;
 import com.iks.backend.user.UserNotFoundException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.CreatedResponseUtil;
@@ -231,7 +233,7 @@ public class KeycloakAdminClientService implements KeycloakService {
           realm.users().searchByEmail(email, true).stream()
               .filter(u -> equalsEmail(u.getEmail(), email))
               .findFirst();
-      log.debug("Keycloak email lookup for email={} found={}", email, user.isPresent());
+      log.debug("Keycloak email lookup completed, found={}", user.isPresent());
       return user;
     } catch (RuntimeException runtimeException) {
       throw new KeycloakServiceException(
@@ -251,7 +253,8 @@ public class KeycloakAdminClientService implements KeycloakService {
       representation.setEmailVerified(false);
       representation.setRequiredActions(requiredActions);
       log.debug(
-          "Creating Keycloak user for email={} with requiredActions={}", email, requiredActions);
+          "Creating Keycloak user with requiredActionCount={}",
+          requiredActions == null ? 0 : requiredActions.size());
 
       Response response = realm.users().create(representation);
       try {
@@ -268,7 +271,7 @@ public class KeycloakAdminClientService implements KeycloakService {
         if (createdUserId == null || createdUserId.isBlank()) {
           throw new KeycloakServiceException("Keycloak did not return an id for the created user");
         }
-        log.debug("Created Keycloak user email={} userId={}", email, createdUserId);
+        log.debug("Created Keycloak user successfully");
         return createdUserId;
       } finally {
         response.close();
@@ -298,11 +301,8 @@ public class KeycloakAdminClientService implements KeycloakService {
           properties.getInviteActionsLifespanSeconds(),
           requiredActions);
       log.debug(
-          "Triggered Keycloak required-actions email for userId={} clientId={} redirectUri={} actions={}",
-          userId,
-          properties.getInviteClientId(),
-          redirectUri,
-          requiredActions);
+          "Triggered Keycloak required-actions email with actionCount={}",
+          requiredActions == null ? 0 : requiredActions.size());
     } catch (UserNotFoundException missingUser) {
       throw missingUser;
     } catch (RuntimeException runtimeException) {
@@ -330,21 +330,9 @@ public class KeycloakAdminClientService implements KeycloakService {
 
       try {
         userResource.update(representation);
-        log.debug(
-            "Updated Keycloak user userId={} firstName={} lastName={} email={}",
-            userId,
-            firstName,
-            lastName,
-            email);
+        log.debug("Updated Keycloak user profile");
       } catch (RuntimeException updateException) {
-        log.error(
-            "Failed to update user in Keycloak: userId={} firstName={} lastName={} email={} error={}",
-            userId,
-            firstName,
-            lastName,
-            email,
-            updateException.getMessage(),
-            updateException);
+        log.error("Failed to update user in Keycloak", updateException);
         throw updateException;
       }
     } catch (UserNotFoundException missingUser) {
@@ -365,7 +353,7 @@ public class KeycloakAdminClientService implements KeycloakService {
         throw new UserNotFoundException(userId);
       }
       userResource.remove();
-      log.debug("Deleted Keycloak user userId={}", userId);
+      log.debug("Deleted Keycloak user");
     } catch (UserNotFoundException missingUser) {
       throw missingUser;
     } catch (RuntimeException runtimeException) {
@@ -374,10 +362,24 @@ public class KeycloakAdminClientService implements KeycloakService {
   }
 
   private static boolean equalsEmail(String left, String right) {
-    if (left == null || right == null) {
+    String normalizedLeft = normalizeEmailForComparison(left);
+    String normalizedRight = normalizeEmailForComparison(right);
+    if (normalizedLeft == null || normalizedRight == null) {
       return false;
     }
-    return left.trim().equalsIgnoreCase(right.trim());
+    return normalizedLeft.equals(normalizedRight);
+  }
+
+  private static String normalizeEmailForComparison(String value) {
+    if (value == null) {
+      return null;
+    }
+    String normalized =
+        Normalizer.normalize(value, Normalizer.Form.NFKC).trim().toLowerCase(Locale.ROOT);
+    if (normalized.isEmpty()) {
+      return null;
+    }
+    return normalized;
   }
 
   private Keycloak buildAdminClient() {

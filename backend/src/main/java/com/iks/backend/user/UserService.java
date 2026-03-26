@@ -75,17 +75,12 @@ public class UserService {
             .toList();
 
     if (notifications.isEmpty()) {
-      log.debug(
-          "No notification recipients found for activityId={} in groupId={}", activityId, groupId);
+      log.debug("No notification recipients found for activity invite");
       return;
     }
 
     userNotificationRepository.saveAll(notifications);
-    log.debug(
-        "Saved {} activity invite notifications for activityId={} groupId={}",
-        notifications.size(),
-        activityId,
-        groupId);
+    log.debug("Saved {} activity invite notifications", notifications.size());
   }
 
   @Transactional
@@ -95,7 +90,7 @@ public class UserService {
         userNotificationRepository.findByUserIdAndReadFalseOrderByCreatedAtDesc(currentUserId);
 
     if (notifications.isEmpty()) {
-      log.debug("No unread notifications for userId={}", currentUserId);
+      log.debug("No unread notifications");
       return notifications;
     }
 
@@ -103,7 +98,7 @@ public class UserService {
     int updatedCount = userNotificationRepository.markAsReadByIds(notificationIds, Instant.now());
 
     if (updatedCount > 0) {
-      log.debug("Marked {} notifications as read for userId={}", updatedCount, currentUserId);
+      log.debug("Marked {} notifications as read", updatedCount);
     }
 
     return notifications;
@@ -118,7 +113,7 @@ public class UserService {
     String email = normalizeEmail(rawEmail);
 
     keycloakService.updateUser(currentUserId, firstName, lastName, email);
-    log.info("Updated profile for userId={}", currentUserId);
+    log.info("Updated profile");
   }
 
   @Transactional
@@ -137,22 +132,21 @@ public class UserService {
 
     List<String> ownedGroupIds =
         appGroupRepository.findByOwnerId(currentUserId).stream().map(AppGroup::getId).toList();
-    log.debug(
-        "Deleting account userId={} with ownedGroupCount={}", currentUserId, ownedGroupIds.size());
+    log.debug("Deleting account with ownedGroupCount={}", ownedGroupIds.size());
 
     for (String groupId : ownedGroupIds) {
-      log.debug("Deleting owned group groupId={} for userId={}", groupId, currentUserId);
+      log.debug("Deleting owned group");
       keycloakService.deleteGroup(groupId);
       appGroupRepository.deleteById(groupId);
     }
 
     long deletedAttendanceCount = activityAttendanceRepository.deleteByUserId(currentUserId);
-    log.debug("Deleted {} attendance entries for userId={}", deletedAttendanceCount, currentUserId);
+    log.debug("Deleted {} attendance entries", deletedAttendanceCount);
     long deletedNotificationsCount = userNotificationRepository.deleteByUserId(currentUserId);
-    log.debug("Deleted {} notifications for userId={}", deletedNotificationsCount, currentUserId);
+    log.debug("Deleted {} notifications", deletedNotificationsCount);
 
     keycloakService.deleteUser(currentUserId);
-    log.info("Deleted account and related references for userId={}", currentUserId);
+    log.info("Deleted account and related references");
   }
 
   private static Optional<UserLookupResult> mapUser(UserRepresentation userRepresentation) {

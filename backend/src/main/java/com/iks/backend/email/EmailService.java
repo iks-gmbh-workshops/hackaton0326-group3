@@ -34,9 +34,9 @@ public class EmailService {
       helper.setSubject(subject);
       helper.setText(htmlBody, true);
       mailSender.send(message);
-      log.info("Email sent to {}: {}", to, subject);
+      log.info("Email sent successfully");
     } catch (MessagingException e) {
-      log.error("Failed to send email to {}: {}", to, e.getMessage(), e);
+      log.error("Failed to send email", e);
     }
   }
 

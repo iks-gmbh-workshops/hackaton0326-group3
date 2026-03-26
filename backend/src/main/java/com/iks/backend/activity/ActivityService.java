@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -209,7 +210,7 @@ public class ActivityService {
 
     AttendanceStatus status;
     try {
-      status = AttendanceStatus.valueOf(statusStr.toUpperCase());
+      status = AttendanceStatus.valueOf(statusStr.toUpperCase(Locale.ROOT));
     } catch (IllegalArgumentException e) {
       throw new InvalidActivityRequestException("Invalid attendance status: " + statusStr);
     }

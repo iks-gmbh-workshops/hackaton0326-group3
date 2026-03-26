@@ -132,17 +132,12 @@ public class GroupService {
     AppGroup group = getGroup(groupId);
     String currentUserId = getCurrentUserId();
     log.debug(
-        "Processing addUserToGroup for groupId={} by requester={} (rawUserIdPresent={} rawEmailPresent={})",
-        groupId,
-        currentUserId,
+        "Processing addUserToGroup (rawUserIdPresent={} rawEmailPresent={})",
         rawUserId != null && !rawUserId.isBlank(),
         rawEmail != null && !rawEmail.isBlank());
 
     if (!group.getOwnerId().equals(currentUserId)) {
-      log.warn(
-          "Rejected addUserToGroup for groupId={} by non-owner requester={}",
-          groupId,
-          currentUserId);
+      log.warn("Rejected addUserToGroup request by non-owner");
       throw new GroupOwnershipException("Only the group owner can add members");
     }
 
@@ -151,8 +146,7 @@ public class GroupService {
 
     if ((userId == null && email == null) || (userId != null && email != null)) {
       log.warn(
-          "Invalid addUserToGroup payload for groupId={}: resolvedUserIdPresent={} resolvedEmailPresent={}",
-          groupId,
+          "Invalid addUserToGroup payload: resolvedUserIdPresent={} resolvedEmailPresent={}",
           userId != null,
           email != null);
       throw new InvalidGroupMemberRequestException("Provide exactly one of userId or email");
@@ -160,13 +154,13 @@ public class GroupService {
 
     if (userId != null) {
       String normalizedUserId = normalizeUserId(userId);
-      log.debug("Adding existing Keycloak userId={} to groupId={}", normalizedUserId, groupId);
+      log.debug("Adding existing Keycloak user to group");
       keycloakService.addUserToGroup(normalizedUserId, groupId);
       return;
     }
 
     String normalizedEmail = normalizeEmail(email);
-    log.debug("Inviting email={} to groupId={}", normalizedEmail, groupId);
+    log.debug("Inviting user to group by email");
     inviteUserToGroup(groupId, normalizedEmail);
   }
 
@@ -193,7 +187,7 @@ public class GroupService {
     }
 
     keycloakService.removeUserFromGroup(currentUserId, groupId);
-    log.debug("User {} left group {}", currentUserId, groupId);
+    log.debug("User left group");
   }
 
   @Transactional(readOnly = true)
@@ -274,25 +268,17 @@ public class GroupService {
 
   private void inviteUserToGroup(String groupId, String email) {
     if (keycloakService.findUserByEmail(email).isPresent()) {
-      log.warn(
-          "Invite rejected for groupId={} because Keycloak account already exists for email={}",
-          groupId,
-          email);
+      log.warn("Invite rejected because Keycloak account already exists for the given email");
       throw new InvalidGroupMemberRequestException(
           "Cannot invite user by email because an account already exists in Keycloak");
     }
 
-    log.debug(
-        "Creating Keycloak user for invite email={} and assigning to groupId={}", email, groupId);
+    log.debug("Creating Keycloak user for invite and assigning to group");
     String createdUserId = keycloakService.createUser(email, INVITE_REQUIRED_ACTIONS);
     keycloakService.addUserToGroup(createdUserId, groupId);
     keycloakService.sendRequiredActionsEmail(
         createdUserId, buildGroupRedirectUri(groupId), INVITE_REQUIRED_ACTIONS);
-    log.debug(
-        "Invite setup completed for email={} createdUserId={} groupId={}",
-        email,
-        createdUserId,
-        groupId);
+    log.debug("Invite setup completed");
   }
 
   private String buildGroupRedirectUri(String groupId) {

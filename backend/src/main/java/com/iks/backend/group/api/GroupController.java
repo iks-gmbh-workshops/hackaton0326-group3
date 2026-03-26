@@ -81,8 +81,7 @@ public class GroupController {
     String requestedUserId = request == null ? null : request.userId();
     String requestedEmail = request == null ? null : request.email();
     log.debug(
-        "Add member request received for groupId={} with userIdPresent={} emailPresent={}",
-        groupId,
+        "Add member request received with userIdPresent={} emailPresent={}",
         requestedUserId != null && !requestedUserId.isBlank(),
         requestedEmail != null && !requestedEmail.isBlank());
     groupService.addUserToGroup(groupId, requestedUserId, requestedEmail);
