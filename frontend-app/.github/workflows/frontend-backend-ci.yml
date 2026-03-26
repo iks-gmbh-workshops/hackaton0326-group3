@@ -1,0 +1,97 @@
+name: Frontend and Backend CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve frontend directory
+        id: frontend-dir
+        run: |
+          if [ -f package.json ]; then
+            echo "path=." >> "$GITHUB_OUTPUT"
+          elif [ -f frontend-app/package.json ]; then
+            echo "path=frontend-app" >> "$GITHUB_OUTPUT"
+          else
+            echo "Frontend directory was not found."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ steps.frontend-dir.outputs.path }}/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ${{ steps.frontend-dir.outputs.path }}
+
+      - name: Lint test
+        run: npm run lint
+        working-directory: ${{ steps.frontend-dir.outputs.path }}
+
+      - name: Dependency check
+        run: npm run deps:check
+        working-directory: ${{ steps.frontend-dir.outputs.path }}
+
+      - name: Unit test
+        run: npm run test:run
+        working-directory: ${{ steps.frontend-dir.outputs.path }}
+
+      - name: Security test
+        run: npm audit --audit-level=high
+        working-directory: ${{ steps.frontend-dir.outputs.path }}
+
+  backend:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Resolve backend directory
+        id: backend-dir
+        run: |
+          if [ -f backend/pom.xml ]; then
+            echo "path=backend" >> "$GITHUB_OUTPUT"
+          elif [ -f pom.xml ]; then
+            echo "path=." >> "$GITHUB_OUTPUT"
+          else
+            echo "Backend directory was not found."
+            exit 1
+          fi
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Lint test
+        run: ./mvnw -B -ntp checkstyle:check
+        working-directory: ${{ steps.backend-dir.outputs.path }}
+
+      - name: Dependency check
+        run: ./mvnw -B -ntp dependency:analyze -DfailOnWarning=true
+        working-directory: ${{ steps.backend-dir.outputs.path }}
+
+      - name: Unit test
+        run: ./mvnw -B -ntp test
+        working-directory: ${{ steps.backend-dir.outputs.path }}
+
+      - name: Security test
+        run: ./mvnw -B -ntp org.owasp:dependency-check-maven:check
+        working-directory: ${{ steps.backend-dir.outputs.path }}
