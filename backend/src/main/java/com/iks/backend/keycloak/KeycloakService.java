@@ -27,5 +27,7 @@ public interface KeycloakService {
 
     void sendRequiredActionsEmail(String userId, String redirectUri, List<String> requiredActions);
 
+    void updateUser(String userId, String firstName, String lastName, String email);
+
     void deleteUser(String userId);
 }

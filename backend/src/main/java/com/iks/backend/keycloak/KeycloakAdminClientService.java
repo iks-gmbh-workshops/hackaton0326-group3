@@ -309,6 +309,38 @@ public class KeycloakAdminClientService implements KeycloakService {
     }
 
     @Override
+    public void updateUser(String userId, String firstName, String lastName, String email) {
+        try (Keycloak keycloak = buildAdminClient()) {
+            RealmResource realm = keycloak.realm(properties.getRealm());
+            UserResource userResource = realm.users().get(userId);
+            
+            UserRepresentation representation;
+            try {
+                representation = userResource.toRepresentation();
+            } catch (NotFoundException notFound) {
+                throw new UserNotFoundException(userId);
+            }
+            
+            representation.setFirstName(firstName);
+            representation.setLastName(lastName);
+            representation.setEmail(email);
+            
+            try {
+                userResource.update(representation);
+                log.debug("Updated Keycloak user userId={} firstName={} lastName={} email={}", userId, firstName, lastName, email);
+            } catch (RuntimeException updateException) {
+                log.error("Failed to update user in Keycloak: userId={} firstName={} lastName={} email={} error={}", 
+                    userId, firstName, lastName, email, updateException.getMessage(), updateException);
+                throw updateException;
+            }
+        } catch (UserNotFoundException missingUser) {
+            throw missingUser;
+        } catch (RuntimeException runtimeException) {
+            throw new KeycloakServiceException("Failed to update user in Keycloak", runtimeException);
+        }
+    }
+
+    @Override
     public void deleteUser(String userId) {
         try (Keycloak keycloak = buildAdminClient()) {
             RealmResource realm = keycloak.realm(properties.getRealm());

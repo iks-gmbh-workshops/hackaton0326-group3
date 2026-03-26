@@ -114,6 +114,18 @@ public class UserService {
     }
 
     @Transactional
+    public void updateOwnProfile(String rawFirstName, String rawLastName, String rawEmail) {
+        String currentUserId = getCurrentUserId();
+        
+        String firstName = normalizeFirstName(rawFirstName);
+        String lastName = normalizeLastName(rawLastName);
+        String email = normalizeEmail(rawEmail);
+        
+        keycloakService.updateUser(currentUserId, firstName, lastName, email);
+        log.info("Updated profile for userId={}", currentUserId);
+    }
+
+    @Transactional
     public void deleteOwnAccount() {
         deleteOwnAccount(null);
     }
@@ -181,6 +193,42 @@ public class UserService {
             return normalizedFirstName;
         }
         return normalizedFirstName + " " + normalizedLastName;
+    }
+
+    private static String normalizeFirstName(String rawFirstName) {
+        String firstName = firstNonBlank(rawFirstName);
+        if (firstName == null) {
+            throw new InvalidUserSearchRequestException("First name is required");
+        }
+        if (firstName.length() > 100) {
+            throw new InvalidUserSearchRequestException("First name must be at most 100 characters");
+        }
+        return firstName;
+    }
+
+    private static String normalizeLastName(String rawLastName) {
+        String lastName = firstNonBlank(rawLastName);
+        if (lastName == null) {
+            throw new InvalidUserSearchRequestException("Last name is required");
+        }
+        if (lastName.length() > 100) {
+            throw new InvalidUserSearchRequestException("Last name must be at most 100 characters");
+        }
+        return lastName;
+    }
+
+    private static String normalizeEmail(String rawEmail) {
+        String email = firstNonBlank(rawEmail);
+        if (email == null) {
+            throw new InvalidUserSearchRequestException("Email is required");
+        }
+        if (!email.contains("@")) {
+            throw new InvalidUserSearchRequestException("Invalid email address");
+        }
+        if (email.length() > 255) {
+            throw new InvalidUserSearchRequestException("Email must be at most 255 characters");
+        }
+        return email;
     }
 
     private static String normalizeQuery(String rawQuery) {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { deleteOwnAccount, isUserApiError } from "@/lib/user-api";
+import { updateOwnProfile, deleteOwnAccount, isUserApiError } from "@/lib/user-api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,19 +59,45 @@ function ProfileContent({
   accessToken: string | null;
   logout: () => Promise<void>;
 }) {
-  const [name, setName] = useState(user.name);
+  const nameParts = user.name.split(" ");
+  const initialFirstName = nameParts[0] || "";
+  const initialLastName = nameParts.slice(1).join(" ") || "";
+  
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(user.email);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    // TODO: call backend API to update profile
-    setTimeout(() => {
-      setSaving(false);
-    }, 500);
+    
+    void (async () => {
+      if (!accessToken) {
+        setSaveError("Missing access token. Please log in again.");
+        return;
+      }
+
+      setSaving(true);
+      setSaveError(null);
+      setSaveSuccess(false);
+
+      try {
+        await updateOwnProfile(accessToken, firstName.trim(), lastName.trim(), email.trim());
+        setSaveSuccess(true);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } catch (error) {
+        setSaveError(
+          isUserApiError(error) ? error.message : "Failed to update profile. Please try again."
+        );
+        setSaving(false);
+      }
+    })();
   };
 
   const handleDeleteAccount = () => {
@@ -123,11 +149,20 @@ function ProfileContent({
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="firstName">First Name</Label>
               <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                id="firstName"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
                 required
               />
             </div>
@@ -137,13 +172,21 @@ function ProfileContent({
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                disabled
+                className="bg-muted cursor-not-allowed"
               />
             </div>
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving…" : "Save Changes"}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving…" : "Save Changes"}
+              </Button>
+              {saveSuccess && (
+                <p className="text-sm text-green-600">Profile updated successfully!</p>
+              )}
+              {saveError && (
+                <p className="text-sm text-destructive">{saveError}</p>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>

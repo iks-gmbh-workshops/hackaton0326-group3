@@ -91,6 +91,27 @@ export async function listMyNotifications(token: string): Promise<Notification[]
   }));
 }
 
+export async function updateOwnProfile(
+  token: string,
+  firstName: string,
+  lastName: string,
+  email: string
+) {
+  const response = await fetch(`${getBackendBaseUrl()}/users/me`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ firstName, lastName, email }),
+  });
+
+  if (!response.ok) {
+    throw new UserApiError(response.status, await parseErrorMessage(response));
+  }
+}
+
 export async function deleteOwnAccount(token: string) {
   const response = await fetch(`${getBackendBaseUrl()}/users/me`, {
     method: "DELETE",
