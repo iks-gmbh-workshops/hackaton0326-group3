@@ -22,7 +22,7 @@ function getInitials(name: string) {
 }
 
 export default function ProfilePage() {
-  const { user, isLoggedIn, isLoading, accessToken, logout } = useAuth();
+  const { user, accessToken, logout, refreshUser, isLoading, isLoggedIn } = useAuth();
 
   if (isLoading) {
     return (
@@ -46,6 +46,7 @@ export default function ProfilePage() {
       user={user}
       accessToken={accessToken}
       logout={logout}
+      refreshUser={refreshUser}
     />
   );
 }
@@ -54,10 +55,12 @@ function ProfileContent({
   user,
   accessToken,
   logout,
+  refreshUser,
 }: {
   user: User;
   accessToken: string | null;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }) {
   const nameParts = user.name.split(" ");
   const initialFirstName = nameParts[0] || "";
@@ -87,14 +90,14 @@ function ProfileContent({
 
       try {
         await updateOwnProfile(accessToken, firstName.trim(), lastName.trim(), email.trim());
+        await refreshUser();
         setSaveSuccess(true);
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
         setSaveError(
           isUserApiError(error) ? error.message : "Failed to update profile. Please try again."
         );
+      } finally {
         setSaving(false);
       }
     })();

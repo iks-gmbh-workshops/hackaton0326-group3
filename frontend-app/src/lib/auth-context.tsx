@@ -13,6 +13,7 @@ interface AuthContextValue {
   isLoading: boolean;
   accessToken: string | null;
   consumeNotification: (notificationId: string) => void;
+  refreshUser: () => Promise<void>;
   login: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   accessToken: null,
   consumeNotification: () => {},
+  refreshUser: async () => {},
   login: async () => {},
   logout: async () => {},
 });
@@ -266,6 +268,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId));
   };
 
+  const refreshUser = async () => {
+    const keycloak = getKeycloakClient();
+    if (!keycloak || !keycloak.authenticated || !keycloak.tokenParsed) {
+      return;
+    }
+
+    try {
+      await keycloak.updateToken(-1);
+      const profile = await keycloak.loadUserProfile();
+      setUser(mapUser(profile, keycloak.tokenParsed));
+      setAccessToken(keycloak.token ?? null);
+    } catch {
+      // Ignore errors, keep existing user state
+    }
+  };
+
   return (
     <AuthContext
       value={{
@@ -275,6 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         accessToken,
         consumeNotification,
+        refreshUser,
         login,
         logout,
       }}
