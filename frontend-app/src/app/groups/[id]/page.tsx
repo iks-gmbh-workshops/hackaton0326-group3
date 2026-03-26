@@ -20,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2, LogOut } from "lucide-react";
+import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2, LogOut, ChevronDown, ChevronUp, Archive } from "lucide-react";
 
 function getInitials(name: string) {
   return name
@@ -48,6 +48,7 @@ export default function GroupDetailPage({
   const [deleting, setDeleting] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn || !accessToken) {
@@ -167,7 +168,24 @@ export default function GroupDetailPage({
   };
 
   const memberCount = members?.length ?? 0;
-  const activityCount = activities?.length ?? 0;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const currentActivities = activities?.filter((activity) => {
+    const activityDate = new Date(activity.scheduledAt);
+    activityDate.setHours(0, 0, 0, 0);
+    return activityDate >= today;
+  }) ?? [];
+  
+  const archivedActivities = activities?.filter((activity) => {
+    const activityDate = new Date(activity.scheduledAt);
+    activityDate.setHours(0, 0, 0, 0);
+    return activityDate < today;
+  }) ?? [];
+  
+  const activityCount = currentActivities.length;
+  const archivedCount = archivedActivities.length;
 
   const handleLeaveGroup = () => {
     if (!confirm("Are you sure you want to leave this group?")) {
@@ -383,55 +401,129 @@ export default function GroupDetailPage({
                 Loading activities...
               </CardContent>
             </Card>
-          ) : activities.length === 0 ? (
+          ) : currentActivities.length === 0 && archivedActivities.length === 0 ? (
             <Card>
               <CardContent className="py-5 text-sm text-muted-foreground">
                 No activities yet.
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {activities.map((activity) => {
-                const scheduledDate = new Date(activity.scheduledAt);
-                const dateStr = scheduledDate.toLocaleDateString();
-                const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                
-                return (
-                  <Link key={activity.id} href={`/groups/${id}/activities/${activity.id}`}>
-                    <Card className="transition-colors hover:border-primary/40">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {activity.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        {activity.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {activity.description}
-                          </p>
-                        )}
-                        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <CalendarDays className="size-3" />
-                            {dateStr}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="size-3" />
-                            {timeStr}
-                          </span>
-                          {activity.location && (
-                            <span className="flex items-center gap-1">
-                              <MapPin className="size-3" />
-                              {activity.location}
-                            </span>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
+            <>
+              {currentActivities.length === 0 ? (
+                <Card>
+                  <CardContent className="py-5 text-sm text-muted-foreground">
+                    No upcoming activities.
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {currentActivities.map((activity) => {
+                    const scheduledDate = new Date(activity.scheduledAt);
+                    const dateStr = scheduledDate.toLocaleDateString();
+                    const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    
+                    return (
+                      <Link key={activity.id} href={`/groups/${id}/activities/${activity.id}`}>
+                        <Card className="transition-colors hover:border-primary/40">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">
+                              {activity.title}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {activity.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-2">
+                                {activity.description}
+                              </p>
+                            )}
+                            <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <CalendarDays className="size-3" />
+                                {dateStr}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="size-3" />
+                                {timeStr}
+                              </span>
+                              {activity.location && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="size-3" />
+                                  {activity.location}
+                                </span>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+
+              {archivedActivities.length > 0 && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => setArchiveOpen(!archiveOpen)}
+                    className="mb-3 flex w-full items-center justify-between rounded-lg border border-border bg-muted/30 px-4 py-2 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                      <Archive className="size-4" />
+                      Archive ({archivedCount})
+                    </h3>
+                    {archiveOpen ? (
+                      <ChevronUp className="size-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronDown className="size-4 text-muted-foreground" />
+                    )}
+                  </button>
+
+                  {archiveOpen && (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {archivedActivities.map((activity) => {
+                        const scheduledDate = new Date(activity.scheduledAt);
+                        const dateStr = scheduledDate.toLocaleDateString();
+                        const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        
+                        return (
+                          <Link key={activity.id} href={`/groups/${id}/activities/${activity.id}`}>
+                            <Card className="opacity-60 transition-all hover:opacity-100 hover:border-primary/40">
+                              <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium">
+                                  {activity.title}
+                                </CardTitle>
+                              </CardHeader>
+                              <CardContent>
+                                {activity.description && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {activity.description}
+                                  </p>
+                                )}
+                                <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <CalendarDays className="size-3" />
+                                    {dateStr}
+                                  </span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="size-3" />
+                                    {timeStr}
+                                  </span>
+                                  {activity.location && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="size-3" />
+                                      {activity.location}
+                                    </span>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </section>
       </div>
