@@ -11,10 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function NewGroupPage() {
   const router = useRouter();
   const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("groupNew");
+  const tc = useTranslations("common");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -24,7 +27,7 @@ export default function NewGroupPage() {
     e.preventDefault();
     if (!name.trim()) return;
     if (!accessToken) {
-      setError("You must be logged in to create a group.");
+      setError(t("loginRequired"));
       return;
     }
 
@@ -37,7 +40,7 @@ export default function NewGroupPage() {
       if (isGroupApiError(apiError)) {
         setError(apiError.message);
       } else {
-        setError("Failed to create group. Please try again.");
+        setError(t("failedToCreate"));
       }
       setSubmitting(false);
     }
@@ -46,7 +49,7 @@ export default function NewGroupPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -54,7 +57,7 @@ export default function NewGroupPage() {
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to create groups.</p>
+        <p className="text-muted-foreground">{t("loginToCreate")}</p>
       </div>
     );
   }
@@ -66,30 +69,30 @@ export default function NewGroupPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to Dashboard
+        {t("backToDashboard")}
       </Link>
 
       <Card>
         <CardHeader>
-          <CardTitle>Create a New Group</CardTitle>
+          <CardTitle>{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Group Name</Label>
+              <Label htmlFor="name">{t("groupName")}</Label>
               <Input
                 id="name"
-                placeholder="e.g. Weekend Hikers"
+                placeholder={t("groupNamePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea
                 id="description"
-                placeholder="What is this group about?"
+                placeholder={t("descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -97,14 +100,14 @@ export default function NewGroupPage() {
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={submitting || !name.trim()}>
-                {submitting ? "Creating…" : "Create Group"}
+                {submitting ? t("creating") : t("createGroup")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push("/dashboard")}
               >
-                Cancel
+                {tc("cancel")}
               </Button>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

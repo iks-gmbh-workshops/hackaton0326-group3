@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Check, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function InvitePage({
   params,
@@ -14,6 +15,7 @@ export default function InvitePage({
   const { token } = use(params);
   const router = useRouter();
   const [status, setStatus] = useState<"pending" | "accepting" | "declining" | "done">("pending");
+  const t = useTranslations("invite");
 
   // TODO: validate token against backend and fetch group info
   const groupName = "Weekend Hikers";
@@ -40,9 +42,9 @@ export default function InvitePage({
       <div className="flex flex-1 items-center justify-center px-4">
         <Card className="w-full max-w-sm text-center">
           <CardContent className="py-12">
-            <p className="text-lg font-medium">Invitation handled</p>
+            <p className="text-lg font-medium">{t("handled")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              You can close this page.
+              {t("canClose")}
             </p>
           </CardContent>
         </Card>
@@ -57,15 +59,17 @@ export default function InvitePage({
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-muted">
             <Users className="size-6 text-primary" />
           </div>
-          <CardTitle>Group Invitation</CardTitle>
+          <CardTitle>{t("title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4 text-center">
           <p className="text-muted-foreground">
-            You&apos;ve been invited to join{" "}
-            <span className="font-semibold text-foreground">{groupName}</span>.
+            {t.rich("invitedTo", {
+              name: groupName,
+              group: (chunks) => <span className="font-semibold text-foreground">{chunks}</span>,
+            })}
           </p>
           <p className="text-sm text-muted-foreground">
-            Accept to register and join the group, or decline the invitation.
+            {t("instructions")}
           </p>
           <div className="flex justify-center gap-3 pt-2">
             <Button
@@ -73,7 +77,7 @@ export default function InvitePage({
               disabled={status !== "pending"}
             >
               <Check className="mr-1 size-4" />
-              {status === "accepting" ? "Joining…" : "Accept & Join"}
+              {status === "accepting" ? t("joining") : t("acceptAndJoin")}
             </Button>
             <Button
               variant="outline"
@@ -81,7 +85,7 @@ export default function InvitePage({
               disabled={status !== "pending"}
             >
               <X className="mr-1 size-4" />
-              {status === "declining" ? "Declining…" : "Decline"}
+              {status === "declining" ? t("declining") : t("decline")}
             </Button>
           </div>
         </CardContent>

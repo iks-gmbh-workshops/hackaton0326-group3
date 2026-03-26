@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Search, Mail, UserPlus, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface PendingMember {
   type: "registered" | "email";
@@ -35,6 +36,8 @@ export default function AddMemberPage({
   const { id } = use(params);
   const router = useRouter();
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("addMember");
+  const tc = useTranslations("common");
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [groupMembers, setGroupMembers] = useState<GroupMember[]>([]);
   const [groupNotFound, setGroupNotFound] = useState(false);
@@ -134,7 +137,7 @@ export default function AddMemberPage({
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -142,7 +145,7 @@ export default function AddMemberPage({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to add members.</p>
+        <p className="text-muted-foreground">{t("loginRequired")}</p>
       </div>
     );
   }
@@ -150,7 +153,7 @@ export default function AddMemberPage({
   if (!accessToken) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+        <p className="text-muted-foreground">{tc("missingToken")}</p>
       </div>
     );
   }
@@ -158,7 +161,7 @@ export default function AddMemberPage({
   if (groupNotFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Group not found.</p>
+        <p className="text-muted-foreground">{t("groupNotFound")}</p>
       </div>
     );
   }
@@ -174,7 +177,7 @@ export default function AddMemberPage({
   if (!group) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading group...</p>
+        <p className="text-muted-foreground">{t("loadingGroup")}</p>
       </div>
     );
   }
@@ -219,22 +222,22 @@ export default function AddMemberPage({
   const handleSubmit = () => {
     void (async () => {
       if (!accessToken) {
-        setSubmitError("Missing access token. Please log in again.");
+        setSubmitError(tc("missingToken"));
         return;
       }
       if (pending.length === 0) {
-        setSubmitError("Select at least one member.");
+        setSubmitError(t("selectAtLeastOne"));
         return;
       }
 
       const memberRequests = [
-        ...new Map(
-          pending.flatMap((member) => {
+        ...new Map<string, { userId?: string; email?: string }>(
+          pending.flatMap((member): [string, { userId?: string; email?: string }][] => {
             if (member.type === "registered" && member.id) {
-              return [[`user:${member.id}`, { userId: member.id }] as const];
+              return [[`user:${member.id}`, { userId: member.id }]];
             }
             if (member.type === "email") {
-              return [[`email:${member.email.toLowerCase()}`, { email: member.email }] as const];
+              return [[`email:${member.email.toLowerCase()}`, { email: member.email }]];
             }
             return [];
           })
@@ -242,7 +245,7 @@ export default function AddMemberPage({
       ];
 
       if (memberRequests.length === 0) {
-        setSubmitError("No valid members selected.");
+        setSubmitError(t("noValidMembers"));
         return;
       }
 
@@ -258,7 +261,7 @@ export default function AddMemberPage({
         setSubmitting(false);
         setSubmitInfo(null);
         setSubmitError(
-          isGroupApiError(error) ? error.message : "Failed to add members to the group."
+          isGroupApiError(error) ? error.message : t("failedToAdd")
         );
       }
     })();
@@ -271,21 +274,21 @@ export default function AddMemberPage({
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to {group.name}
+        {t("backTo", { name: group.name })}
       </Link>
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>Add Members to {group.name}</CardTitle>
+          <CardTitle>{t("title", { name: group.name })}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Search registered users */}
           <div className="space-y-2">
-            <Label>Search Registered Users</Label>
+            <Label>{t("searchUsers")}</Label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name or email…"
+                placeholder={t("searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -295,14 +298,14 @@ export default function AddMemberPage({
               <div className="max-h-48 overflow-y-auto rounded-md border border-border">
                 {search.trim().length < 2 ? (
                   <p className="p-3 text-sm text-muted-foreground">
-                    Type at least 2 characters to search.
+                    {t("minChars")}
                   </p>
                 ) : searchingUsers ? (
-                  <p className="p-3 text-sm text-muted-foreground">Searching users...</p>
+                  <p className="p-3 text-sm text-muted-foreground">{t("searchingUsers")}</p>
                 ) : searchError ? (
                   <p className="p-3 text-sm text-destructive">{searchError}</p>
                 ) : filteredUsers.length === 0 ? (
-                  <p className="p-3 text-sm text-muted-foreground">No users found.</p>
+                  <p className="p-3 text-sm text-muted-foreground">{t("noUsersFound")}</p>
                 ) : (
                   filteredUsers.map((u) => (
                     <button
@@ -324,13 +327,13 @@ export default function AddMemberPage({
 
           {/* Invite by email */}
           <div className="space-y-2">
-            <Label>Invite by Email (unregistered users)</Label>
+            <Label>{t("inviteByEmail")}</Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Mail className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
                 <Input
                   type="email"
-                  placeholder="email@example.com"
+                  placeholder={t("emailPlaceholder")}
                   value={emailInvite}
                   onChange={(e) => setEmailInvite(e.target.value)}
                   className="pl-9"
@@ -343,7 +346,7 @@ export default function AddMemberPage({
                 />
               </div>
               <Button variant="outline" onClick={addEmailInvite}>
-                Add
+                {tc("add")}
               </Button>
             </div>
           </div>
@@ -355,7 +358,7 @@ export default function AddMemberPage({
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-base">
-              Members to Add ({pending.length})
+              {t("membersToAdd", { count: pending.length })}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -368,7 +371,7 @@ export default function AddMemberPage({
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{p.name}</span>
                     <Badge variant={p.type === "registered" ? "secondary" : "outline"} className="text-xs">
-                      {p.type === "registered" ? "Registered" : "Email Invite"}
+                      {p.type === "registered" ? t("registered") : t("emailInvite")}
                     </Badge>
                   </div>
                   <button
@@ -382,10 +385,10 @@ export default function AddMemberPage({
             </div>
             <div className="mt-4 flex gap-2">
               <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting ? "Adding…" : `Add ${pending.length} Member${pending.length !== 1 ? "s" : ""}`}
+                {submitting ? t("adding") : t("addMembers", { count: pending.length })}
               </Button>
               <Button variant="outline" onClick={() => setPending([])}>
-                Clear All
+                {t("clearAll")}
               </Button>
             </div>
             {submitError && <p className="mt-3 text-sm text-destructive">{submitError}</p>}

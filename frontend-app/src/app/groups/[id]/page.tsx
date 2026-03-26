@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2, LogOut, ChevronDown, ChevronUp, Archive } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
 
 function getInitials(name: string) {
   return name
@@ -39,6 +41,9 @@ export default function GroupDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("groupDetail");
+  const tc = useTranslations("common");
+  const { locale } = useLocale();
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[] | null>(null);
   const [activities, setActivities] = useState<BackendActivity[] | null>(null);
@@ -83,7 +88,7 @@ export default function GroupDetailPage({
           } else {
             setNotFound(false);
             setLoadError(
-              isGroupApiError(error) ? error.message : "Failed to load group."
+              isGroupApiError(error) ? error.message : t("failedToLoad")
             );
           }
         }
@@ -100,7 +105,7 @@ export default function GroupDetailPage({
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -108,7 +113,7 @@ export default function GroupDetailPage({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to view groups.</p>
+        <p className="text-muted-foreground">{t("loginRequired")}</p>
       </div>
     );
   }
@@ -116,7 +121,7 @@ export default function GroupDetailPage({
   if (!accessToken) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+        <p className="text-muted-foreground">{tc("missingToken")}</p>
       </div>
     );
   }
@@ -124,7 +129,7 @@ export default function GroupDetailPage({
   if (notFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Group not found.</p>
+        <p className="text-muted-foreground">{t("groupNotFound")}</p>
       </div>
     );
   }
@@ -140,7 +145,7 @@ export default function GroupDetailPage({
   if (!group) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading group...</p>
+        <p className="text-muted-foreground">{tc("loading")}</p>
       </div>
     );
   }
@@ -148,7 +153,7 @@ export default function GroupDetailPage({
   const isOwner = user?.id === group.ownerId;
 
   const handleDeleteGroup = () => {
-    if (!confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+    if (!confirm(t("confirmDelete"))) {
       return;
     }
 
@@ -160,7 +165,7 @@ export default function GroupDetailPage({
         router.push("/dashboard");
       } catch (error) {
         setMemberActionError(
-          isGroupApiError(error) ? error.message : "Failed to delete group."
+          isGroupApiError(error) ? error.message : t("failedToDelete")
         );
         setDeleting(false);
       }
@@ -188,13 +193,13 @@ export default function GroupDetailPage({
   const archivedCount = archivedActivities.length;
 
   const handleLeaveGroup = () => {
-    if (!confirm("Are you sure you want to leave this group?")) {
+    if (!confirm(t("confirmLeave"))) {
       return;
     }
 
     void (async () => {
       if (!accessToken) {
-        setMemberActionError("Missing access token. Please log in again.");
+        setMemberActionError(tc("missingToken"));
         return;
       }
 
@@ -205,7 +210,7 @@ export default function GroupDetailPage({
         router.push("/dashboard");
       } catch (error) {
         setMemberActionError(
-          isGroupApiError(error) ? error.message : "Failed to leave group."
+          isGroupApiError(error) ? error.message : t("failedToLeave")
         );
         setLeaving(false);
       }
@@ -215,7 +220,7 @@ export default function GroupDetailPage({
   const handleRemoveMember = (memberId: string) => {
     void (async () => {
       if (!accessToken) {
-        setMemberActionError("Missing access token. Please log in again.");
+        setMemberActionError(tc("missingToken"));
         return;
       }
 
@@ -228,7 +233,7 @@ export default function GroupDetailPage({
         );
       } catch (error) {
         setMemberActionError(
-          isGroupApiError(error) ? error.message : "Failed to remove member from group."
+          isGroupApiError(error) ? error.message : t("failedToRemoveMember")
         );
       } finally {
         setRemovingMemberId(null);
@@ -243,7 +248,7 @@ export default function GroupDetailPage({
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to Dashboard
+        {t("backToDashboard")}
       </Link>
 
       <div className="mb-6 flex items-start justify-between">
@@ -251,7 +256,7 @@ export default function GroupDetailPage({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">{group.name}</h1>
             <Badge variant="secondary" className="text-xs">
-              Group
+              {tc("group")}
             </Badge>
           </div>
           {group.description && (
@@ -267,7 +272,7 @@ export default function GroupDetailPage({
               onClick={handleDeleteGroup}
             >
               <Trash2 className="mr-1 size-4" />
-              {deleting ? "Deleting..." : "Delete Group"}
+              {deleting ? tc("deleting") : t("deleteGroup")}
             </Button>
           )}
           {!isOwner && (
@@ -278,7 +283,7 @@ export default function GroupDetailPage({
               onClick={handleLeaveGroup}
             >
               <LogOut className="mr-1 size-4" />
-              {leaving ? "Leaving..." : "Leave Group"}
+              {leaving ? t("leaving") : t("leaveGroup")}
             </Button>
           )}
           {isOwner && (
@@ -288,21 +293,21 @@ export default function GroupDetailPage({
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 <Pencil className="mr-1 size-4" />
-                Edit Group
+                {t("editGroup")}
               </Link>
               <Link
                 href={`/groups/${group.id}/members/add`}
                 className={buttonVariants({ variant: "outline", size: "sm" })}
               >
                 <UserPlus className="mr-1 size-4" />
-                Add Member
+                {t("addMember")}
               </Link>
               <Link
                 href={`/groups/${group.id}/activities/new`}
                 className={buttonVariants({ size: "sm" })}
               >
                 <Plus className="mr-1 size-4" />
-                New Activity
+                {t("newActivity")}
               </Link>
             </>
           )}
@@ -315,7 +320,7 @@ export default function GroupDetailPage({
         <section className="lg:col-span-1">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             <Users className="size-4" />
-            Members ({memberCount})
+            {t("members")} ({memberCount})
           </h2>
           {memberActionError && (
             <p className="mb-3 text-sm text-destructive">{memberActionError}</p>
@@ -323,13 +328,13 @@ export default function GroupDetailPage({
           {members === null ? (
             <Card>
               <CardContent className="py-5 text-sm text-muted-foreground">
-                Loading members...
+                {t("loadingMembers")}
               </CardContent>
             </Card>
           ) : members.length === 0 ? (
             <Card>
               <CardContent className="py-5 text-sm text-muted-foreground">
-                No members in this group yet.
+                {t("noMembers")}
               </CardContent>
             </Card>
           ) : (
@@ -349,7 +354,7 @@ export default function GroupDetailPage({
                       {member.name}
                       {member.id === group.ownerId && (
                         <Badge variant="default" className="ml-2 text-[10px] px-1.5 py-0">
-                          Owner
+                          {tc("owner")}
                         </Badge>
                       )}
                     </p>
@@ -366,7 +371,7 @@ export default function GroupDetailPage({
                       onClick={() => {
                         handleRemoveMember(member.id);
                       }}
-                      title="Remove member"
+                      title={t("removeMember")}
                     >
                       <UserMinus className="size-4" />
                     </Button>
@@ -385,7 +390,7 @@ export default function GroupDetailPage({
               })}
             >
               <UserPlus className="mr-1 size-4" />
-              Add Member
+              {t("addMember")}
             </Link>
           )}
         </section>
@@ -393,18 +398,18 @@ export default function GroupDetailPage({
         <section className="lg:col-span-2">
           <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
             <CalendarDays className="size-4" />
-            Activities ({activityCount})
+            {t("activities")} ({activityCount})
           </h2>
           {activities === null ? (
             <Card>
               <CardContent className="py-5 text-sm text-muted-foreground">
-                Loading activities...
+                {t("loadingActivities")}
               </CardContent>
             </Card>
           ) : currentActivities.length === 0 && archivedActivities.length === 0 ? (
             <Card>
               <CardContent className="py-5 text-sm text-muted-foreground">
-                No activities yet.
+                {t("noActivities")}
               </CardContent>
             </Card>
           ) : (
@@ -412,15 +417,15 @@ export default function GroupDetailPage({
               {currentActivities.length === 0 ? (
                 <Card>
                   <CardContent className="py-5 text-sm text-muted-foreground">
-                    No upcoming activities.
+                    {t("noUpcomingActivities")}
                   </CardContent>
                 </Card>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {currentActivities.map((activity) => {
                     const scheduledDate = new Date(activity.scheduledAt);
-                    const dateStr = scheduledDate.toLocaleDateString();
-                    const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const dateStr = scheduledDate.toLocaleDateString(locale);
+                    const timeStr = scheduledDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
                     
                     return (
                       <Link key={activity.id} href={`/groups/${id}/activities/${activity.id}`}>
@@ -468,7 +473,7 @@ export default function GroupDetailPage({
                   >
                     <h3 className="flex items-center gap-2 text-base font-semibold">
                       <Archive className="size-4" />
-                      Archive ({archivedCount})
+                      {t("archive")} ({archivedCount})
                     </h3>
                     {archiveOpen ? (
                       <ChevronUp className="size-4 text-muted-foreground" />
@@ -481,8 +486,8 @@ export default function GroupDetailPage({
                     <div className="grid gap-3 sm:grid-cols-2">
                       {archivedActivities.map((activity) => {
                         const scheduledDate = new Date(activity.scheduledAt);
-                        const dateStr = scheduledDate.toLocaleDateString();
-                        const timeStr = scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = scheduledDate.toLocaleDateString(locale);
+                        const timeStr = scheduledDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
                         
                         return (
                           <Link key={activity.id} href={`/groups/${id}/activities/${activity.id}`}>

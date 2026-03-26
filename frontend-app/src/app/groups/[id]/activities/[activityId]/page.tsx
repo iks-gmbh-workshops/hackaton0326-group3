@@ -31,6 +31,8 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
 
 export default function ActivityDetailPage({
   params,
@@ -40,6 +42,9 @@ export default function ActivityDetailPage({
   const { id: groupId, activityId } = use(params);
   const router = useRouter();
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("activityDetail");
+  const tc = useTranslations("common");
+  const { locale } = useLocale();
   const [activity, setActivity] = useState<BackendActivity | null>(null);
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [attendees, setAttendees] = useState<BackendAttendance[]>([]);
@@ -90,7 +95,7 @@ export default function ActivityDetailPage({
           } else {
             setNotFound(false);
             setLoadError(
-              isActivityApiError(error) ? error.message : "Failed to load activity."
+              isActivityApiError(error) ? error.message : t("failedToLoad")
             );
           }
         }
@@ -120,7 +125,7 @@ export default function ActivityDetailPage({
       await loadAttendees();
     } catch (error) {
       setRsvpError(
-        isActivityApiError(error) ? error.message : "Failed to update attendance."
+        isActivityApiError(error) ? error.message : t("failedToUpdateAttendance")
       );
     } finally {
       setRsvpLoading(false);
@@ -128,7 +133,7 @@ export default function ActivityDetailPage({
   };
 
   const handleDelete = () => {
-    if (!confirm("Are you sure you want to delete this activity? This action cannot be undone.")) {
+    if (!confirm(t("confirmDelete"))) {
       return;
     }
 
@@ -140,7 +145,7 @@ export default function ActivityDetailPage({
         router.push(`/groups/${groupId}`);
       } catch (error) {
         alert(
-          isActivityApiError(error) ? error.message : "Failed to delete activity."
+          isActivityApiError(error) ? error.message : t("failedToDelete")
         );
         setDeleting(false);
       }
@@ -150,7 +155,7 @@ export default function ActivityDetailPage({
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -158,7 +163,7 @@ export default function ActivityDetailPage({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to view activities.</p>
+        <p className="text-muted-foreground">{t("loginRequired")}</p>
       </div>
     );
   }
@@ -166,7 +171,7 @@ export default function ActivityDetailPage({
   if (notFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Activity not found.</p>
+        <p className="text-muted-foreground">{t("activityNotFound")}</p>
       </div>
     );
   }
@@ -182,19 +187,19 @@ export default function ActivityDetailPage({
   if (!activity) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading activity...</p>
+        <p className="text-muted-foreground">{t("loadingActivity")}</p>
       </div>
     );
   }
 
   const scheduledDate = new Date(activity.scheduledAt);
-  const dateStr = scheduledDate.toLocaleDateString(undefined, {
+  const dateStr = scheduledDate.toLocaleDateString(locale, {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-  const timeStr = scheduledDate.toLocaleTimeString([], {
+  const timeStr = scheduledDate.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -215,7 +220,7 @@ export default function ActivityDetailPage({
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to {group?.name ?? "Group"}
+        {t("backTo", { name: group?.name ?? tc("group") })}
       </Link>
 
       <div className="mb-6">
@@ -228,7 +233,7 @@ export default function ActivityDetailPage({
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="secondary" className="text-xs">
-              Activity
+              {tc("activity")}
             </Badge>
             {group && user?.id === group.ownerId && !isPast && (
               <>
@@ -237,7 +242,7 @@ export default function ActivityDetailPage({
                   className={buttonVariants({ variant: "outline", size: "sm" })}
                 >
                   <Pencil className="mr-1 size-4" />
-                  Edit
+                  {t("edit")}
                 </Link>
                 <Button
                   variant="destructive"
@@ -246,7 +251,7 @@ export default function ActivityDetailPage({
                   onClick={handleDelete}
                 >
                   <Trash2 className="mr-1 size-4" />
-                  {deleting ? "Deleting..." : "Delete"}
+                  {deleting ? tc("deleting") : tc("delete")}
                 </Button>
               </>
             )}
@@ -261,7 +266,7 @@ export default function ActivityDetailPage({
           <CardContent className="flex items-start gap-3 py-4">
             <CalendarDays className="mt-0.5 size-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Date</p>
+              <p className="text-sm font-medium">{t("dateLabel")}</p>
               <p className="text-sm text-muted-foreground">{dateStr}</p>
             </div>
           </CardContent>
@@ -271,7 +276,7 @@ export default function ActivityDetailPage({
           <CardContent className="flex items-start gap-3 py-4">
             <Clock className="mt-0.5 size-5 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Time</p>
+              <p className="text-sm font-medium">{t("timeLabel")}</p>
               <p className="text-sm text-muted-foreground">{timeStr}</p>
             </div>
           </CardContent>
@@ -282,7 +287,7 @@ export default function ActivityDetailPage({
             <CardContent className="flex items-start gap-3 py-4">
               <MapPin className="mt-0.5 size-5 text-muted-foreground" />
               <div>
-                <p className="text-sm font-medium">Location</p>
+                <p className="text-sm font-medium">{t("locationLabel")}</p>
                 <p className="text-sm text-muted-foreground">{activity.location}</p>
               </div>
             </CardContent>
@@ -296,7 +301,7 @@ export default function ActivityDetailPage({
           <section>
             <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold">
               <FileText className="size-4" />
-              Description
+              {t("descriptionLabel")}
             </h2>
             <p className="whitespace-pre-wrap text-sm text-muted-foreground leading-relaxed">
               {activity.description}
@@ -310,15 +315,19 @@ export default function ActivityDetailPage({
       <section>
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
           <Users className="size-4" />
-          Attendance
+          {t("attendance")}
         </h2>
 
         {!isPast && (
           <div className="mb-6">
             <p className="mb-3 text-sm text-muted-foreground">
-              {currentStatus
-                ? `You have ${currentStatus === "ACCEPTED" ? "accepted" : currentStatus === "DECLINED" ? "declined" : "tentatively accepted"} this activity. You can change your response until the event starts.`
-                : "Will you be attending this activity?"}
+              {currentStatus === "ACCEPTED"
+                ? t("rsvpAccepted")
+                : currentStatus === "DECLINED"
+                  ? t("rsvpDeclined")
+                  : currentStatus === "MAYBE"
+                    ? t("rsvpMaybe")
+                    : t("rsvpPrompt")}
             </p>
             <div className="flex gap-3">
               <Button
@@ -328,7 +337,7 @@ export default function ActivityDetailPage({
                 onClick={() => handleRsvp("ACCEPTED")}
               >
                 <CheckCircle className="mr-1.5 size-4" />
-                {currentStatus === "ACCEPTED" ? "Attending" : "Accept"}
+                {currentStatus === "ACCEPTED" ? t("attending") : t("accept")}
               </Button>
               <Button
                 variant={currentStatus === "MAYBE" ? "secondary" : "outline"}
@@ -337,7 +346,7 @@ export default function ActivityDetailPage({
                 onClick={() => handleRsvp("MAYBE")}
               >
                 <HelpCircle className="mr-1.5 size-4" />
-                {currentStatus === "MAYBE" ? "Maybe attending" : "Maybe"}
+                {currentStatus === "MAYBE" ? t("maybeAttending") : t("maybe")}
               </Button>
               <Button
                 variant={currentStatus === "DECLINED" ? "destructive" : "outline"}
@@ -346,7 +355,7 @@ export default function ActivityDetailPage({
                 onClick={() => handleRsvp("DECLINED")}
               >
                 <XCircle className="mr-1.5 size-4" />
-                {currentStatus === "DECLINED" ? "Not attending" : "Decline"}
+                {currentStatus === "DECLINED" ? t("notAttending") : t("decline")}
               </Button>
             </div>
             {rsvpError && (
@@ -357,14 +366,14 @@ export default function ActivityDetailPage({
 
         {isPast && (
           <p className="mb-4 text-sm text-muted-foreground">
-            This activity has already started. Attendance can no longer be changed.
+            {t("pastActivity")}
           </p>
         )}
 
         {acceptedAttendees.length > 0 && (
           <div className="mb-4">
             <h3 className="mb-2 text-sm font-medium text-green-700 dark:text-green-400">
-              Attending ({acceptedAttendees.length})
+              {t("attending")} ({acceptedAttendees.length})
             </h3>
             <ul className="space-y-1">
               {acceptedAttendees.map((a) => (
@@ -381,7 +390,7 @@ export default function ActivityDetailPage({
         {maybeAttendees.length > 0 && (
           <div className="mb-4">
             <h3 className="mb-2 text-sm font-medium text-yellow-700 dark:text-yellow-400">
-              Maybe ({maybeAttendees.length})
+              {t("maybe")} ({maybeAttendees.length})
             </h3>
             <ul className="space-y-1">
               {maybeAttendees.map((a) => (
@@ -398,7 +407,7 @@ export default function ActivityDetailPage({
         {declinedAttendees.length > 0 && (
           <div className="mb-4">
             <h3 className="mb-2 text-sm font-medium text-red-700 dark:text-red-400">
-              Not attending ({declinedAttendees.length})
+              {t("notAttending")} ({declinedAttendees.length})
             </h3>
             <ul className="space-y-1">
               {declinedAttendees.map((a) => (
@@ -414,7 +423,7 @@ export default function ActivityDetailPage({
 
         {attendees.length === 0 && (
           <p className="text-sm text-muted-foreground">
-            No one has responded yet.
+            {t("noResponses")}
           </p>
         )}
       </section>

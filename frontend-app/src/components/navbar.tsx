@@ -11,8 +11,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, User, Menu, X } from "lucide-react";
+import { Bell, LogOut, User, Menu, X, Globe } from "lucide-react";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { useLocale, type AppLocale } from "@/lib/locale-context";
 
 function getInitials(name: string) {
   return name
@@ -28,6 +30,9 @@ export function Navbar() {
     useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const unreadCount = notifications.length;
+  const t = useTranslations("nav");
+  const tc = useTranslations("common");
+  const { locale, setLocale } = useLocale();
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -42,13 +47,13 @@ export function Navbar() {
           {isLoggedIn ? (
             <>
               <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                Dashboard
+                {t("dashboard")}
               </Link>
               <Link href="/activities" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                Activities
+                {t("activities")}
               </Link>
               <Link href="/groups/new" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-                New Group
+                {t("newGroup")}
               </Link>
 
               {/* Notifications */}
@@ -65,12 +70,12 @@ export function Navbar() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="px-3 py-2 text-sm font-semibold">
-                    Notifications{unreadCount > 0 ? ` (${unreadCount})` : ""}
+                    {t("notifications")}{unreadCount > 0 ? ` (${unreadCount})` : ""}
                   </div>
                   <DropdownMenuSeparator />
                   {notifications.length === 0 ? (
                     <div className="px-3 py-4 text-center text-sm text-muted-foreground">
-                      No notifications
+                      {t("noNotifications")}
                     </div>
                   ) : (
                     notifications.map((n) => (
@@ -109,7 +114,7 @@ export function Navbar() {
                   <DropdownMenuItem>
                     <Link href="/profile" className="flex w-full items-center">
                       <User className="mr-2 size-4" />
-                      Profile
+                      {t("profile")}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -119,7 +124,7 @@ export function Navbar() {
                     }}
                   >
                     <LogOut className="mr-2 size-4" />
-                    Logout
+                    {tc("logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -132,9 +137,32 @@ export function Navbar() {
                 void login();
               }}
             >
-              {isLoading ? "Loading..." : "Login"}
+              {isLoading ? tc("loading") : tc("login")}
             </Button>
           )}
+
+          {/* Language toggle */}
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className={buttonVariants({ variant: "ghost", size: "icon" })}
+            >
+              <Globe className="size-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem
+                onClick={() => setLocale("en")}
+                className={locale === "en" ? "font-semibold" : ""}
+              >
+                🇬🇧 English
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setLocale("de")}
+                className={locale === "de" ? "font-semibold" : ""}
+              >
+                🇩🇪 Deutsch
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         {/* Mobile toggle */}
@@ -158,28 +186,28 @@ export function Navbar() {
                 className="rounded-md px-3 py-2 text-sm hover:bg-muted"
                 onClick={() => setMobileOpen(false)}
               >
-                Dashboard
+                {t("dashboard")}
               </Link>
               <Link
                 href="/activities"
                 className="rounded-md px-3 py-2 text-sm hover:bg-muted"
                 onClick={() => setMobileOpen(false)}
               >
-                Activities
+                {t("activities")}
               </Link>
               <Link
                 href="/groups/new"
                 className="rounded-md px-3 py-2 text-sm hover:bg-muted"
                 onClick={() => setMobileOpen(false)}
               >
-                New Group
+                {t("newGroup")}
               </Link>
               <Link
                 href="/profile"
                 className="rounded-md px-3 py-2 text-sm hover:bg-muted"
                 onClick={() => setMobileOpen(false)}
               >
-                Profile
+                {t("profile")}
               </Link>
               <button
                 className="rounded-md px-3 py-2 text-left text-sm text-destructive hover:bg-muted"
@@ -188,8 +216,22 @@ export function Navbar() {
                   setMobileOpen(false);
                 }}
               >
-                Logout
+                {tc("logout")}
               </button>
+              <div className="flex gap-1 px-3 py-2">
+                <button
+                  className={`rounded px-2 py-1 text-xs ${locale === "en" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  onClick={() => setLocale("en")}
+                >
+                  EN
+                </button>
+                <button
+                  className={`rounded px-2 py-1 text-xs ${locale === "de" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                  onClick={() => setLocale("de")}
+                >
+                  DE
+                </button>
+              </div>
             </>
           ) : (
             <Button
@@ -199,7 +241,7 @@ export function Navbar() {
                 void login();
               }}
             >
-              {isLoading ? "Loading..." : "Login"}
+              {isLoading ? tc("loading") : tc("login")}
             </Button>
           )}
         </nav>

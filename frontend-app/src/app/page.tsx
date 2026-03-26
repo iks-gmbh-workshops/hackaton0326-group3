@@ -4,26 +4,28 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Users, CalendarDays, Mail, ArrowRight } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function Home() {
   const { isLoggedIn, isLoading, login } = useAuth();
+  const t = useTranslations("landing");
 
   return (
     <div className="flex flex-col">
       {/* Hero */}
       <section className="flex flex-col items-center gap-6 px-4 py-24 text-center md:py-32">
         <h1 className="max-w-2xl text-4xl font-bold tracking-tight md:text-5xl">
-          Organise group activities,{" "}
-          <span className="text-primary/70">effortlessly</span>
+          {t.rich("headline", {
+            accent: (chunks) => <span className="text-primary/70">{chunks}</span>,
+          })}
         </h1>
         <p className="max-w-lg text-lg text-muted-foreground">
-          Create groups, plan activities, invite friends — registered or not —
-          and track who&apos;s in. All in one place.
+          {t("subtitle")}
         </p>
         <div className="flex gap-3">
           {isLoggedIn ? (
             <Link href="/dashboard" className={buttonVariants({ size: "lg" })}>
-              Go to Dashboard
+              {t("goToDashboard")}
               <ArrowRight className="ml-1 size-4" />
             </Link>
           ) : (
@@ -34,7 +36,7 @@ export default function Home() {
                 void login();
               }}
             >
-              Get Started
+              {t("getStarted")}
               <ArrowRight className="ml-1 size-4" />
             </Button>
           )}
@@ -45,18 +47,18 @@ export default function Home() {
       <section className="mx-auto grid max-w-5xl gap-8 px-4 pb-24 md:grid-cols-3">
         <FeatureCard
           icon={<Users className="size-6 text-primary" />}
-          title="Group Management"
-          description="Create groups and add members — search registered users or just enter an email to invite anyone."
+          title={t("featureGroupsTitle")}
+          description={t("featureGroupsDesc")}
         />
         <FeatureCard
           icon={<CalendarDays className="size-6 text-primary" />}
-          title="Activity Planning"
-          description="Schedule activities for your group with date, time, and location. Everyone gets notified."
+          title={t("featureActivitiesTitle")}
+          description={t("featureActivitiesDesc")}
         />
         <FeatureCard
           icon={<Mail className="size-6 text-primary" />}
-          title="Easy RSVPs"
-          description="Members accept or decline with one click. Admins see the full picture at a glance."
+          title={t("featureRsvpTitle")}
+          description={t("featureRsvpDesc")}
         />
       </section>
     </div>

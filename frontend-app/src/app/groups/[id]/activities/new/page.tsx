@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function NewActivityPage({
   params,
@@ -21,6 +22,8 @@ export default function NewActivityPage({
   const { id } = use(params);
   const router = useRouter();
   const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("activityNew");
+  const tc = useTranslations("common");
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [groupNotFound, setGroupNotFound] = useState(false);
   const [groupError, setGroupError] = useState<string | null>(null);
@@ -76,7 +79,7 @@ export default function NewActivityPage({
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -84,7 +87,7 @@ export default function NewActivityPage({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to create activities.</p>
+        <p className="text-muted-foreground">{t("loginToCreate")}</p>
       </div>
     );
   }
@@ -92,7 +95,7 @@ export default function NewActivityPage({
   if (!accessToken) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+        <p className="text-muted-foreground">{tc("missingToken")}</p>
       </div>
     );
   }
@@ -100,7 +103,7 @@ export default function NewActivityPage({
   if (groupNotFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Group not found.</p>
+        <p className="text-muted-foreground">{t("groupNotFound")}</p>
       </div>
     );
   }
@@ -116,7 +119,7 @@ export default function NewActivityPage({
   if (!group) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading group...</p>
+        <p className="text-muted-foreground">{t("loadingGroup")}</p>
       </div>
     );
   }
@@ -128,17 +131,17 @@ export default function NewActivityPage({
       const selectedDate = new Date(`${dateValue}T${timeValue}`);
       
       if (isNaN(selectedDate.getTime())) {
-        return "Invalid date or time. Please check that the date exists (e.g., February only has 28/29 days).";
+        return t("invalidDateTime");
       }
 
       const now = new Date();
       if (selectedDate < now) {
-        return "Activity cannot be scheduled in the past.";
+        return t("pastDateTime");
       }
 
       return null;
     } catch {
-      return "Invalid date or time format.";
+      return t("invalidFormat");
     }
   };
 
@@ -158,7 +161,7 @@ export default function NewActivityPage({
     e.preventDefault();
     if (!title.trim() || !date || !time) return;
     if (!accessToken) {
-      setError("You must be logged in to create an activity.");
+      setError(t("loginRequired"));
       return;
     }
 
@@ -186,7 +189,7 @@ export default function NewActivityPage({
       if (isActivityApiError(apiError)) {
         setError(apiError.message);
       } else {
-        setError("Failed to create activity. Please try again.");
+        setError(t("failedToCreate"));
       }
       setSubmitting(false);
     }
@@ -199,30 +202,30 @@ export default function NewActivityPage({
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to {group.name}
+        {t("backTo", { name: group.name })}
       </Link>
 
       <Card>
         <CardHeader>
-          <CardTitle>New Activity for {group.name}</CardTitle>
+          <CardTitle>{t("title", { name: group.name })}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">{t("activityTitle")}</Label>
               <Input
                 id="title"
-                placeholder="e.g. Mountain Trail Hike"
+                placeholder={t("titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea
                 id="description"
-                placeholder="What should participants know?"
+                placeholder={t("descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -230,7 +233,7 @@ export default function NewActivityPage({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date">{t("date")}</Label>
                 <Input
                   ref={dateInputRef}
                   id="date"
@@ -251,7 +254,7 @@ export default function NewActivityPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">{t("time")}</Label>
                 <Input
                   id="time"
                   type="time"
@@ -266,24 +269,24 @@ export default function NewActivityPage({
               <p className="text-sm text-destructive">{dateError}</p>
             )}
             <div className="space-y-2">
-              <Label htmlFor="location">Location (optional)</Label>
+              <Label htmlFor="location">{t("location")}</Label>
               <Input
                 id="location"
-                placeholder="e.g. City Park Entrance"
+                placeholder={t("locationPlaceholder")}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={submitting || !title.trim() || !date || !time || !!dateError}>
-                {submitting ? "Creating…" : "Create Activity"}
+                {submitting ? t("creating") : t("createActivity")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push(`/groups/${id}`)}
               >
-                Cancel
+                {tc("cancel")}
               </Button>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

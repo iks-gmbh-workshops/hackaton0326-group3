@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { useLocale } from "@/lib/locale-context";
 
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
@@ -16,16 +18,16 @@ function getFirstDayOfMonth(year: number, month: number): number {
   return new Date(year, month, 1).getDay();
 }
 
-function formatMonthYear(year: number, month: number): string {
-  return new Date(year, month).toLocaleDateString("en-US", {
+function formatMonthYear(year: number, month: number, locale: string): string {
+  return new Date(year, month).toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
 }
 
-function formatTime(dateTimeStr: string): string {
+function formatTime(dateTimeStr: string, locale: string): string {
   const date = new Date(dateTimeStr);
-  return date.toLocaleTimeString("en-US", {
+  return date.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -33,6 +35,9 @@ function formatTime(dateTimeStr: string): string {
 
 export default function ActivitiesPage() {
   const { user, accessToken, isLoading, isLoggedIn } = useAuth();
+  const t = useTranslations("activitiesCalendar");
+  const tc = useTranslations("common");
+  const { locale } = useLocale();
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [activities, setActivities] = useState<UserActivity[]>([]);
@@ -52,7 +57,7 @@ export default function ActivitiesPage() {
         const data = await listMyActivities(accessToken);
         setActivities(data);
       } catch (err) {
-        setError("Failed to load activities");
+        setError(t("failedToLoad"));
       } finally {
         setLoadingActivities(false);
       }
@@ -62,7 +67,7 @@ export default function ActivitiesPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{tc("loading")}</p>
       </div>
     );
   }
@@ -70,7 +75,7 @@ export default function ActivitiesPage() {
   if (!isLoggedIn || !user) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to view your activities.</p>
+        <p className="text-muted-foreground">{t("loginRequired")}</p>
       </div>
     );
   }
@@ -146,7 +151,7 @@ export default function ActivitiesPage() {
                 }`}
               >
                 <div className="font-medium truncate">{activity.title}</div>
-                <div className="text-muted-foreground">{formatTime(activity.scheduledAt)}</div>
+                <div className="text-muted-foreground">{formatTime(activity.scheduledAt, locale)}</div>
               </Link>
             );
           })}
@@ -162,14 +167,14 @@ export default function ActivitiesPage() {
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="size-5" />
-              My Activities
+              {t("title")}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={handlePreviousMonth}>
                 <ChevronLeft className="size-4" />
               </Button>
               <div className="min-w-48 text-center font-semibold">
-                {formatMonthYear(currentYear, currentMonth)}
+                {formatMonthYear(currentYear, currentMonth, locale)}
               </div>
               <Button variant="outline" size="icon" onClick={handleNextMonth}>
                 <ChevronRight className="size-4" />
@@ -179,13 +184,13 @@ export default function ActivitiesPage() {
         </CardHeader>
         <CardContent>
           {loadingActivities ? (
-            <div className="py-12 text-center text-muted-foreground">Loading activities...</div>
+            <div className="py-12 text-center text-muted-foreground">{t("loading")}</div>
           ) : error ? (
             <div className="py-12 text-center text-destructive">{error}</div>
           ) : (
             <>
               <div className="mb-2 grid grid-cols-7 gap-px">
-                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+                {[t("sun"), t("mon"), t("tue"), t("wed"), t("thu"), t("fri"), t("sat")].map((day) => (
                   <div key={day} className="py-2 text-center text-sm font-semibold text-muted-foreground">
                     {day}
                   </div>
@@ -194,7 +199,7 @@ export default function ActivitiesPage() {
               <div className="grid grid-cols-7 gap-px bg-border">{calendarDays}</div>
               {activities.length === 0 && (
                 <div className="mt-6 text-center text-sm text-muted-foreground">
-                  No accepted activities yet. Join a group and accept activity invitations to see them here!
+                  {t("noActivities")}
                 </div>
               )}
             </>

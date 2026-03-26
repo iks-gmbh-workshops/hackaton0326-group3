@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function EditActivityPage({
   params,
@@ -21,6 +22,8 @@ export default function EditActivityPage({
   const { id: groupId, activityId } = use(params);
   const router = useRouter();
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("activityEdit");
+  const tc = useTranslations("common");
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [activity, setActivity] = useState<BackendActivity | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -75,7 +78,7 @@ export default function EditActivityPage({
           } else {
             setNotFound(false);
             setLoadError(
-              isActivityApiError(error) ? error.message : "Failed to load activity."
+              isActivityApiError(error) ? error.message : t("failedToLoad")
             );
           }
         }
@@ -92,7 +95,7 @@ export default function EditActivityPage({
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -100,7 +103,7 @@ export default function EditActivityPage({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to edit activities.</p>
+        <p className="text-muted-foreground">{t("loginToEdit")}</p>
       </div>
     );
   }
@@ -108,7 +111,7 @@ export default function EditActivityPage({
   if (!accessToken) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+        <p className="text-muted-foreground">{tc("missingToken")}</p>
       </div>
     );
   }
@@ -116,7 +119,7 @@ export default function EditActivityPage({
   if (notFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Activity not found.</p>
+        <p className="text-muted-foreground">{t("activityNotFound")}</p>
       </div>
     );
   }
@@ -132,7 +135,7 @@ export default function EditActivityPage({
   if (!group || !activity) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading activity...</p>
+        <p className="text-muted-foreground">{t("loadingActivity")}</p>
       </div>
     );
   }
@@ -140,7 +143,7 @@ export default function EditActivityPage({
   if (user?.id !== group.ownerId) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-destructive">Only the group owner can edit activities.</p>
+        <p className="text-destructive">{t("ownerOnly")}</p>
       </div>
     );
   }
@@ -149,7 +152,7 @@ export default function EditActivityPage({
   if (isPast) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-destructive">This activity has already occurred and cannot be edited.</p>
+        <p className="text-destructive">{t("pastActivity")}</p>
       </div>
     );
   }
@@ -161,17 +164,17 @@ export default function EditActivityPage({
       const selectedDate = new Date(`${dateValue}T${timeValue}`);
       
       if (isNaN(selectedDate.getTime())) {
-        return "Invalid date or time. Please check that the date exists (e.g., February only has 28/29 days).";
+        return t("invalidDateTime");
       }
 
       const now = new Date();
       if (selectedDate < now) {
-        return "Activity cannot be scheduled in the past.";
+        return t("pastDateTime");
       }
 
       return null;
     } catch {
-      return "Invalid date or time format.";
+      return t("invalidFormat");
     }
   };
 
@@ -191,7 +194,7 @@ export default function EditActivityPage({
     e.preventDefault();
     if (!title.trim() || !date || !time) return;
     if (!accessToken) {
-      setError("You must be logged in to edit an activity.");
+      setError(t("loginRequired"));
       return;
     }
 
@@ -220,7 +223,7 @@ export default function EditActivityPage({
       if (isActivityApiError(apiError)) {
         setError(apiError.message);
       } else {
-        setError("Failed to update activity. Please try again.");
+        setError(t("failedToUpdate"));
       }
       setSubmitting(false);
     }
@@ -233,30 +236,30 @@ export default function EditActivityPage({
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to Activity
+        {t("backToActivity")}
       </Link>
 
       <Card>
         <CardHeader>
-          <CardTitle>Edit Activity</CardTitle>
+          <CardTitle>{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="title">Title</Label>
+              <Label htmlFor="title">{t("activityTitle")}</Label>
               <Input
                 id="title"
-                placeholder="e.g. Mountain Trail Hike"
+                placeholder={t("titlePlaceholder")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea
                 id="description"
-                placeholder="What should participants know?"
+                placeholder={t("descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -264,7 +267,7 @@ export default function EditActivityPage({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date">{t("date")}</Label>
                 <Input
                   ref={dateInputRef}
                   id="date"
@@ -284,7 +287,7 @@ export default function EditActivityPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">{t("time")}</Label>
                 <Input
                   id="time"
                   type="time"
@@ -299,24 +302,24 @@ export default function EditActivityPage({
               <p className="text-sm text-destructive">{dateError}</p>
             )}
             <div className="space-y-2">
-              <Label htmlFor="location">Location (optional)</Label>
+              <Label htmlFor="location">{t("location")}</Label>
               <Input
                 id="location"
-                placeholder="e.g. City Park Entrance"
+                placeholder={t("locationPlaceholder")}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={submitting || !title.trim() || !date || !time || !!dateError}>
-                {submitting ? "Saving…" : "Save Changes"}
+                {submitting ? tc("saving") : tc("save")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push(`/groups/${groupId}/activities/${activityId}`)}
               >
-                Cancel
+                {tc("cancel")}
               </Button>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}

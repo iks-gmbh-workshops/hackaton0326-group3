@@ -8,11 +8,15 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function DashboardPage() {
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
   const [groups, setGroups] = useState<BackendGroup[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const t = useTranslations("dashboard");
+  const tc = useTranslations("common");
+  const tn = useTranslations("nav");
 
   useEffect(() => {
     if (!isLoggedIn || !accessToken) {
@@ -48,7 +52,7 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -56,7 +60,7 @@ export default function DashboardPage() {
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to view your dashboard.</p>
+        <p className="text-muted-foreground">{tc("loginRequired")}</p>
       </div>
     );
   }
@@ -64,7 +68,7 @@ export default function DashboardPage() {
   if (!accessToken) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+        <p className="text-muted-foreground">{tc("missingToken")}</p>
       </div>
     );
   }
@@ -77,27 +81,27 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {greetingName}</h1>
+          <h1 className="text-2xl font-bold">{t("welcomeBack", { name: greetingName })}</h1>
           <p className="text-muted-foreground">
-            {groups === null ? "Loading groups..." : `${groups.length} group${groups.length !== 1 ? "s" : ""}`}
+            {groups === null ? t("loadingGroups") : t("groupCount", { count: groups.length })}
           </p>
         </div>
         <Link href="/groups/new" className={buttonVariants({ size: "sm" })}>
           <Plus className="mr-1 size-4" />
-          New Group
+          {tn("newGroup")}
         </Link>
       </div>
 
       {loadError && <p className="mb-3 text-sm text-destructive">{loadError}</p>}
 
       <section className="mb-10">
-        <h2 className="mb-3 text-lg font-semibold">My Groups</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("myGroups")}</h2>
         {groups === null ? (
-          <p className="text-sm text-muted-foreground">Loading groups...</p>
+          <p className="text-sm text-muted-foreground">{t("loadingGroups")}</p>
         ) : ownedGroups.length === 0 ? (
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
-              You don&apos;t own any groups yet. Create your first group above.
+              {t("noOwnedGroups")}
             </CardContent>
           </Card>
         ) : (
@@ -109,7 +113,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm font-medium">{group.name}</CardTitle>
                       <Badge variant="secondary" className="text-xs">
-                        Owner
+                        {tc("owner")}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -119,7 +123,7 @@ export default function DashboardPage() {
                         {group.description}
                       </p>
                     ) : (
-                      <p className="text-xs text-muted-foreground italic">No description</p>
+                      <p className="text-xs text-muted-foreground italic">{t("noDescription")}</p>
                     )}
                   </CardContent>
                 </Card>
@@ -130,13 +134,13 @@ export default function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Member Of</h2>
+        <h2 className="mb-3 text-lg font-semibold">{t("memberOf")}</h2>
         {groups === null ? (
-          <p className="text-sm text-muted-foreground">Loading groups...</p>
+          <p className="text-sm text-muted-foreground">{t("loadingGroups")}</p>
         ) : memberGroups.length === 0 ? (
           <Card>
             <CardContent className="py-6 text-sm text-muted-foreground">
-              You&apos;re not a member of any other groups yet.
+              {t("noMemberGroups")}
             </CardContent>
           </Card>
         ) : (
@@ -148,7 +152,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm font-medium">{group.name}</CardTitle>
                       <Badge variant="secondary" className="text-xs">
-                        Member
+                        {tc("member")}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -158,7 +162,7 @@ export default function DashboardPage() {
                         {group.description}
                       </p>
                     ) : (
-                      <p className="text-xs text-muted-foreground italic">No description</p>
+                      <p className="text-xs text-muted-foreground italic">{t("noDescription")}</p>
                     )}
                   </CardContent>
                 </Card>

@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Trash2 } from "lucide-react";
 import type { User } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 function getInitials(name: string) {
   return name
@@ -23,11 +24,13 @@ function getInitials(name: string) {
 
 export default function ProfilePage() {
   const { user, accessToken, logout, refreshUser, isLoading, isLoggedIn } = useAuth();
+  const tc = useTranslations("common");
+  const t = useTranslations("profile");
 
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -35,7 +38,7 @@ export default function ProfilePage() {
   if (!isLoggedIn || !user) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to view your profile.</p>
+        <p className="text-muted-foreground">{t("loginToView")}</p>
       </div>
     );
   }
@@ -62,6 +65,8 @@ function ProfileContent({
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }) {
+  const t = useTranslations("profile");
+  const tc = useTranslations("common");
   const nameParts = user.name.split(" ");
   const initialFirstName = nameParts[0] || "";
   const initialLastName = nameParts.slice(1).join(" ") || "";
@@ -80,7 +85,7 @@ function ProfileContent({
     
     void (async () => {
       if (!accessToken) {
-        setSaveError("Missing access token. Please log in again.");
+        setSaveError(tc("missingToken"));
         return;
       }
 
@@ -95,7 +100,7 @@ function ProfileContent({
         setTimeout(() => setSaveSuccess(false), 3000);
       } catch (error) {
         setSaveError(
-          isUserApiError(error) ? error.message : "Failed to update profile. Please try again."
+          isUserApiError(error) ? error.message : t("failedToUpdate")
         );
       } finally {
         setSaving(false);
@@ -106,11 +111,11 @@ function ProfileContent({
   const handleDeleteAccount = () => {
     void (async () => {
       if (!accessToken) {
-        setDeleteError("Missing access token. Please log in again.");
+        setDeleteError(tc("missingToken"));
         return;
       }
 
-      if (!window.confirm("Delete your account permanently? This cannot be undone.")) {
+      if (!window.confirm(t("confirmDelete"))) {
         return;
       }
 
@@ -126,7 +131,7 @@ function ProfileContent({
         }
       } catch (error) {
         setDeleteError(
-          isUserApiError(error) ? error.message : "Failed to delete account. Please try again."
+          isUserApiError(error) ? error.message : t("failedToDelete")
         );
         setDeleting(false);
       }
@@ -135,7 +140,7 @@ function ProfileContent({
 
   return (
     <div className="mx-auto max-w-xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold">Profile</h1>
+      <h1 className="mb-6 text-2xl font-bold">{t("title")}</h1>
 
       <Card className="mb-6">
         <CardHeader>
@@ -152,7 +157,7 @@ function ProfileContent({
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="firstName">{t("firstName")}</Label>
               <Input
                 id="firstName"
                 value={firstName}
@@ -161,7 +166,7 @@ function ProfileContent({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
+              <Label htmlFor="lastName">{t("lastName")}</Label>
               <Input
                 id="lastName"
                 value={lastName}
@@ -170,7 +175,7 @@ function ProfileContent({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -181,10 +186,10 @@ function ProfileContent({
             </div>
             <div className="flex flex-col gap-2">
               <Button type="submit" disabled={saving}>
-                {saving ? "Saving…" : "Save Changes"}
+                {saving ? tc("saving") : t("saveChanges")}
               </Button>
               {saveSuccess && (
-                <p className="text-sm text-green-600">Profile updated successfully!</p>
+                <p className="text-sm text-green-600">{t("profileUpdated")}</p>
               )}
               {saveError && (
                 <p className="text-sm text-destructive">{saveError}</p>
@@ -199,12 +204,11 @@ function ProfileContent({
       {/* Danger zone */}
       <Card className="border-destructive/30">
         <CardHeader>
-          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardTitle className="text-destructive">{t("dangerZone")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">
-            Deleting your account will permanently remove all your data, including
-            group memberships and activity history. This action cannot be undone.
+            {t("deleteAccountWarning")}
           </p>
           <Button
             variant="destructive"
@@ -213,7 +217,7 @@ function ProfileContent({
             disabled={deleting}
           >
             <Trash2 className="mr-1 size-4" />
-            {deleting ? "Deleting…" : "Delete Account"}
+            {deleting ? t("deletingAccount") : t("deleteAccount")}
           </Button>
           {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
         </CardContent>

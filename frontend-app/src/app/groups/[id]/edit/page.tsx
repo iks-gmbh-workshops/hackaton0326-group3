@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function EditGroupPage({
   params,
@@ -20,6 +21,8 @@ export default function EditGroupPage({
   const { id } = use(params);
   const router = useRouter();
   const { isLoggedIn, isLoading, accessToken } = useAuth();
+  const t = useTranslations("groupEdit");
+  const tc = useTranslations("common");
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -72,7 +75,7 @@ export default function EditGroupPage({
     e.preventDefault();
     if (!name.trim()) return;
     if (!accessToken) {
-      setSubmitError("You must be logged in to edit a group.");
+      setSubmitError(t("loginRequired"));
       return;
     }
 
@@ -85,7 +88,7 @@ export default function EditGroupPage({
       if (isGroupApiError(apiError)) {
         setSubmitError(apiError.message);
       } else {
-        setSubmitError("Failed to update group. Please try again.");
+        setSubmitError(t("failedToUpdate"));
       }
       setSubmitting(false);
     }
@@ -94,7 +97,7 @@ export default function EditGroupPage({
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Checking authentication...</p>
+        <p className="text-muted-foreground">{tc("checkingAuth")}</p>
       </div>
     );
   }
@@ -102,7 +105,7 @@ export default function EditGroupPage({
   if (!isLoggedIn) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Please log in to edit groups.</p>
+        <p className="text-muted-foreground">{t("loginToEdit")}</p>
       </div>
     );
   }
@@ -110,7 +113,7 @@ export default function EditGroupPage({
   if (!accessToken) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Missing access token. Please log in again.</p>
+        <p className="text-muted-foreground">{tc("missingToken")}</p>
       </div>
     );
   }
@@ -118,7 +121,7 @@ export default function EditGroupPage({
   if (notFound) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Group not found.</p>
+        <p className="text-muted-foreground">{t("groupNotFound")}</p>
       </div>
     );
   }
@@ -134,7 +137,7 @@ export default function EditGroupPage({
   if (!group) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-muted-foreground">Loading group...</p>
+        <p className="text-muted-foreground">{t("loadingGroup")}</p>
       </div>
     );
   }
@@ -146,30 +149,30 @@ export default function EditGroupPage({
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-3" />
-        Back to Group
+        {t("backToGroup")}
       </Link>
 
       <Card>
         <CardHeader>
-          <CardTitle>Edit Group</CardTitle>
+          <CardTitle>{t("title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Group Name</Label>
+              <Label htmlFor="name">{t("groupName")}</Label>
               <Input
                 id="name"
-                placeholder="e.g. Weekend Hikers"
+                placeholder={t("groupNamePlaceholder")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t("description")}</Label>
               <Textarea
                 id="description"
-                placeholder="What is this group about?"
+                placeholder={t("descriptionPlaceholder")}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
@@ -177,14 +180,14 @@ export default function EditGroupPage({
             </div>
             <div className="flex gap-2 pt-2">
               <Button type="submit" disabled={submitting || !name.trim()}>
-                {submitting ? "Saving…" : "Save Changes"}
+                {submitting ? tc("saving") : tc("save")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => router.push(`/groups/${id}`)}
               >
-                Cancel
+                {tc("cancel")}
               </Button>
             </div>
             {submitError && <p className="text-sm text-destructive">{submitError}</p>}
