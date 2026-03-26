@@ -10,6 +10,4 @@ public record AttendanceResponse(
     String userEmail,
     String status,
     Instant createdAt,
-    Instant updatedAt
-) {
-}
+    Instant updatedAt) {}

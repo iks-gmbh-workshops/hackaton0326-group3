@@ -1,7 +1,5 @@
 package com.iks.backend.user;
 
-import java.time.Instant;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -9,136 +7,136 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.Instant;
 
 @Entity
 @Table(name = "app_notification")
 public class UserNotification {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "id", nullable = false, updatable = false, length = 64)
-    private String id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
+  @Column(name = "id", nullable = false, updatable = false, length = 64)
+  private String id;
 
-    @Column(name = "user_id", nullable = false, updatable = false, length = 64)
-    private String userId;
+  @Column(name = "user_id", nullable = false, updatable = false, length = 64)
+  private String userId;
 
-    @Column(name = "type", nullable = false, length = 64)
-    private String type;
+  @Column(name = "type", nullable = false, length = 64)
+  private String type;
 
-    @Column(name = "title", nullable = false, length = 255)
-    private String title;
+  @Column(name = "title", nullable = false, length = 255)
+  private String title;
 
-    @Column(name = "message", nullable = false, length = 2000)
-    private String message;
+  @Column(name = "message", nullable = false, length = 2000)
+  private String message;
 
-    @Column(name = "link", length = 512)
-    private String link;
+  @Column(name = "link", length = 512)
+  private String link;
 
-    @Column(name = "is_read", nullable = false)
-    private boolean read;
+  @Column(name = "is_read", nullable = false)
+  private boolean read;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+  @Column(name = "created_at", nullable = false, updatable = false)
+  private Instant createdAt;
 
-    @Column(name = "read_at")
-    private Instant readAt;
+  @Column(name = "read_at")
+  private Instant readAt;
 
-    public UserNotification() {
+  public UserNotification() {}
+
+  public UserNotification(String userId, String type, String title, String message, String link) {
+    this.userId = userId;
+    this.type = type;
+    this.title = title;
+    this.message = message;
+    this.link = link;
+    this.read = false;
+  }
+
+  @PrePersist
+  void prePersist() {
+    if (this.createdAt == null) {
+      this.createdAt = Instant.now();
     }
+  }
 
-    public UserNotification(String userId, String type, String title, String message, String link) {
-        this.userId = userId;
-        this.type = type;
-        this.title = title;
-        this.message = message;
-        this.link = link;
-        this.read = false;
+  public void markRead(Instant when) {
+    if (this.read) {
+      return;
     }
+    this.read = true;
+    this.readAt = when;
+  }
 
-    @PrePersist
-    void prePersist() {
-        if (this.createdAt == null) {
-            this.createdAt = Instant.now();
-        }
-    }
+  public String getId() {
+    return id;
+  }
 
-    public void markRead(Instant when) {
-        if (this.read) {
-            return;
-        }
-        this.read = true;
-        this.readAt = when;
-    }
+  public void setId(String id) {
+    this.id = id;
+  }
 
-    public String getId() {
-        return id;
-    }
+  public String getUserId() {
+    return userId;
+  }
 
-    public void setId(String id) {
-        this.id = id;
-    }
+  public void setUserId(String userId) {
+    this.userId = userId;
+  }
 
-    public String getUserId() {
-        return userId;
-    }
+  public String getType() {
+    return type;
+  }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+  public void setType(String type) {
+    this.type = type;
+  }
 
-    public String getType() {
-        return type;
-    }
+  public String getTitle() {
+    return title;
+  }
 
-    public void setType(String type) {
-        this.type = type;
-    }
+  public void setTitle(String title) {
+    this.title = title;
+  }
 
-    public String getTitle() {
-        return title;
-    }
+  public String getMessage() {
+    return message;
+  }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
+  public void setMessage(String message) {
+    this.message = message;
+  }
 
-    public String getMessage() {
-        return message;
-    }
+  public String getLink() {
+    return link;
+  }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
+  public void setLink(String link) {
+    this.link = link;
+  }
 
-    public String getLink() {
-        return link;
-    }
+  public boolean isRead() {
+    return read;
+  }
 
-    public void setLink(String link) {
-        this.link = link;
-    }
+  public void setRead(boolean read) {
+    this.read = read;
+  }
 
-    public boolean isRead() {
-        return read;
-    }
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
 
-    public void setRead(boolean read) {
-        this.read = read;
-    }
+  public void setCreatedAt(Instant createdAt) {
+    this.createdAt = createdAt;
+  }
 
-    public Instant getCreatedAt() {
-        return createdAt;
-    }
+  public Instant getReadAt() {
+    return readAt;
+  }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Instant getReadAt() {
-        return readAt;
-    }
-
-    public void setReadAt(Instant readAt) {
-        this.readAt = readAt;
-    }
+  public void setReadAt(Instant readAt) {
+    this.readAt = readAt;
+  }
 }

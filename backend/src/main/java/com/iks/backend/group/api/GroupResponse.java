@@ -8,6 +8,4 @@ public record GroupResponse(
     String description,
     String ownerId,
     Instant createdAt,
-    Instant updatedAt
-) {
-}
+    Instant updatedAt) {}

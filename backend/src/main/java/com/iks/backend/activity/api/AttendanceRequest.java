@@ -1,8 +1,3 @@
 package com.iks.backend.activity.api;
 
-public record AttendanceRequest(
-    String status,
-    String userName,
-    String userEmail
-) {
-}
+public record AttendanceRequest(String status, String userName, String userEmail) {}

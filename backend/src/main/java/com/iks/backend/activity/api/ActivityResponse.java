@@ -11,6 +11,4 @@ public record ActivityResponse(
     LocalDateTime scheduledAt,
     String location,
     Instant createdAt,
-    Instant updatedAt
-) {
-}
+    Instant updatedAt) {}

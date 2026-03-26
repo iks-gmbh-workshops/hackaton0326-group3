@@ -4,12 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.time.Instant;
-import java.util.List;
-
+import com.iks.backend.activity.ActivityService;
 import com.iks.backend.user.UserLookupResult;
 import com.iks.backend.user.UserNotification;
 import com.iks.backend.user.UserService;
+
+import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,35 +24,32 @@ class UserControllerTest {
 
     @Mock
     private UserService userService;
-
+    @Mock
+    private ActivityService activityService;
     private UserController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new UserController(userService);
+        controller = new UserController(userService, activityService);
     }
 
     @Test
     void searchUsersUsesFirstNonBlankInput() {
-        when(userService.searchByNameOrEmail("Alice")).thenReturn(
-            List.of(new UserLookupResult("u-1", "Alice", "alice@example.com"))
-        );
+        when(userService.searchByNameOrEmail("Alice"))
+                .thenReturn(List.of(new UserLookupResult("u-1", "Alice", "alice@example.com")));
 
         List<UserLookupResponse> response = controller.searchUsers("  ", " Alice ", null);
 
-        assertThat(response).containsExactly(new UserLookupResponse("u-1", "Alice", "alice@example.com"));
+        assertThat(response)
+                .containsExactly(new UserLookupResponse("u-1", "Alice", "alice@example.com"));
         verify(userService).searchByNameOrEmail("Alice");
     }
 
     @Test
     void listMyNotificationsMapsDomainModel() {
-        UserNotification notification = new UserNotification(
-            "u-1",
-            "activity_invite",
-            "New Activity",
-            "Join us",
-            "/groups/g-1/activities/a-1"
-        );
+        UserNotification notification =
+                new UserNotification(
+                        "u-1", "activity_invite", "New Activity", "Join us", "/groups/g-1/activities/a-1");
         notification.setId("n-1");
         notification.setRead(false);
         notification.setCreatedAt(Instant.parse("2025-01-01T10:00:00Z"));
@@ -60,17 +58,16 @@ class UserControllerTest {
 
         List<UserNotificationResponse> response = controller.listMyNotifications();
 
-        assertThat(response).containsExactly(
-            new UserNotificationResponse(
-                "n-1",
-                "activity_invite",
-                "New Activity",
-                "Join us",
-                false,
-                Instant.parse("2025-01-01T10:00:00Z"),
-                "/groups/g-1/activities/a-1"
-            )
-        );
+        assertThat(response)
+                .containsExactly(
+                        new UserNotificationResponse(
+                                "n-1",
+                                "activity_invite",
+                                "New Activity",
+                                "Join us",
+                                false,
+                                Instant.parse("2025-01-01T10:00:00Z"),
+                                "/groups/g-1/activities/a-1"));
     }
 
     @Test
