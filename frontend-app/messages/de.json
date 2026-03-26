@@ -242,5 +242,9 @@
     "declining": "Wird abgelehnt…",
     "handled": "Einladung bearbeitet",
     "canClose": "Sie können diese Seite schließen."
+  },
+  "confirmDialog": {
+    "cancel": "Abbrechen",
+    "confirm": "Bestätigen"
   }
 }

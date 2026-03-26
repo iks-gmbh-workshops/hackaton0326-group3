@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Trash2 } from "lucide-react";
 import type { User } from "@/lib/types";
 import { useTranslations } from "next-intl";
+import { useConfirmDialog } from "@/components/confirmation-dialog";
 
 function getInitials(name: string) {
   return name
@@ -67,6 +68,7 @@ function ProfileContent({
 }) {
   const t = useTranslations("profile");
   const tc = useTranslations("common");
+  const { confirm, dialog } = useConfirmDialog();
   const nameParts = user.name.split(" ");
   const initialFirstName = nameParts[0] || "";
   const initialLastName = nameParts.slice(1).join(" ") || "";
@@ -115,7 +117,13 @@ function ProfileContent({
         return;
       }
 
-      if (!window.confirm(t("confirmDelete"))) {
+      const confirmed = await confirm({
+        title: t("deleteAccount"),
+        description: t("confirmDelete"),
+        variant: "destructive",
+      });
+
+      if (!confirmed) {
         return;
       }
 
@@ -222,6 +230,7 @@ function ProfileContent({
           {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
         </CardContent>
       </Card>
+      {dialog}
     </div>
   );
 }

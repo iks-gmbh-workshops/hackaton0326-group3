@@ -242,5 +242,9 @@
     "declining": "Declining…",
     "handled": "Invitation handled",
     "canClose": "You can close this page."
+  },
+  "confirmDialog": {
+    "cancel": "Cancel",
+    "confirm": "Confirm"
   }
 }

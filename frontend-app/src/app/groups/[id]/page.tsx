@@ -23,6 +23,7 @@ import { Separator } from "@/components/ui/separator";
 import { CalendarDays, Clock, MapPin, Plus, UserPlus, ArrowLeft, Users, UserMinus, Pencil, Trash2, LogOut, ChevronDown, ChevronUp, Archive } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "@/lib/locale-context";
+import { useConfirmDialog } from "@/components/confirmation-dialog";
 
 function getInitials(name: string) {
   return name
@@ -44,6 +45,7 @@ export default function GroupDetailPage({
   const t = useTranslations("groupDetail");
   const tc = useTranslations("common");
   const { locale } = useLocale();
+  const { confirm, dialog } = useConfirmDialog();
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[] | null>(null);
   const [activities, setActivities] = useState<BackendActivity[] | null>(null);
@@ -153,11 +155,17 @@ export default function GroupDetailPage({
   const isOwner = user?.id === group.ownerId;
 
   const handleDeleteGroup = () => {
-    if (!confirm(t("confirmDelete"))) {
-      return;
-    }
-
     void (async () => {
+      const confirmed = await confirm({
+        title: t("deleteGroup"),
+        description: t("confirmDelete"),
+        variant: "destructive",
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
       if (!accessToken) return;
       setDeleting(true);
       try {
@@ -193,11 +201,17 @@ export default function GroupDetailPage({
   const archivedCount = archivedActivities.length;
 
   const handleLeaveGroup = () => {
-    if (!confirm(t("confirmLeave"))) {
-      return;
-    }
-
     void (async () => {
+      const confirmed = await confirm({
+        title: t("leaveGroup"),
+        description: t("confirmLeave"),
+        variant: "destructive",
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
       if (!accessToken) {
         setMemberActionError(tc("missingToken"));
         return;
@@ -532,6 +546,7 @@ export default function GroupDetailPage({
           )}
         </section>
       </div>
+      {dialog}
     </div>
   );
 }

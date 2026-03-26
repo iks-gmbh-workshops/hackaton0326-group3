@@ -14,8 +14,9 @@ import {
   type BackendAttendance,
 } from "@/lib/activity-api";
 import { getGroup, type BackendGroup } from "@/lib/group-api";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -33,6 +34,7 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocale } from "@/lib/locale-context";
+import { useConfirmDialog } from "@/components/confirmation-dialog";
 
 export default function ActivityDetailPage({
   params,
@@ -45,6 +47,7 @@ export default function ActivityDetailPage({
   const t = useTranslations("activityDetail");
   const tc = useTranslations("common");
   const { locale } = useLocale();
+  const { confirm, dialog } = useConfirmDialog();
   const [activity, setActivity] = useState<BackendActivity | null>(null);
   const [group, setGroup] = useState<BackendGroup | null>(null);
   const [attendees, setAttendees] = useState<BackendAttendance[]>([]);
@@ -133,11 +136,17 @@ export default function ActivityDetailPage({
   };
 
   const handleDelete = () => {
-    if (!confirm(t("confirmDelete"))) {
-      return;
-    }
-
     void (async () => {
+      const confirmed = await confirm({
+        title: tc("delete"),
+        description: t("confirmDelete"),
+        variant: "destructive",
+      });
+
+      if (!confirmed) {
+        return;
+      }
+
       if (!accessToken) return;
       setDeleting(true);
       try {
@@ -427,6 +436,7 @@ export default function ActivityDetailPage({
           </p>
         )}
       </section>
+      {dialog}
     </div>
   );
 }
