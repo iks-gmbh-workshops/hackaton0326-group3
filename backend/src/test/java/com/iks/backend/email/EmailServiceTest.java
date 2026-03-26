@@ -1,7 +1,5 @@
 package com.iks.backend.email;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -31,23 +29,22 @@ class EmailServiceTest {
   @Mock private JavaMailSender mailSender;
 
   private MimeMessage mimeMessage;
-  private Logger emailServiceLogger;
-  private Level previousLogLevel;
+  private Object emailServiceLogger;
+  private Object previousLogLevel;
+  private Class<?> logbackLoggerClass;
+  private Class<?> logbackLevelClass;
 
   @BeforeEach
   void setUp() {
     mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
     when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-
-    emailServiceLogger = (Logger) LoggerFactory.getLogger(EmailService.class);
-    previousLogLevel = emailServiceLogger.getLevel();
-    emailServiceLogger.setLevel(Level.OFF);
+    muteEmailServiceLoggerIfLogbackIsPresent();
   }
 
   @AfterEach
-  void tearDown() {
+  void tearDown() throws Exception {
     if (emailServiceLogger != null) {
-      emailServiceLogger.setLevel(previousLogLevel);
+      logbackLoggerClass.getMethod("setLevel", logbackLevelClass).invoke(emailServiceLogger, previousLogLevel);
     }
   }
 
@@ -84,5 +81,26 @@ class EmailServiceTest {
     emailService.sendEmailToMany(List.of("a@example.com", "b@example.com"), "Subject", "Body");
 
     verify(mailSender, times(2)).send(any(MimeMessage.class));
+  }
+
+  private void muteEmailServiceLoggerIfLogbackIsPresent() {
+    try {
+      logbackLoggerClass = Class.forName("ch.qos.logback.classic.Logger");
+      logbackLevelClass = Class.forName("ch.qos.logback.classic.Level");
+      Object logger = LoggerFactory.getLogger(EmailService.class);
+      if (!logbackLoggerClass.isInstance(logger)) {
+        return;
+      }
+
+      emailServiceLogger = logger;
+      previousLogLevel = logbackLoggerClass.getMethod("getLevel").invoke(logger);
+      Object offLevel = logbackLevelClass.getField("OFF").get(null);
+      logbackLoggerClass.getMethod("setLevel", logbackLevelClass).invoke(logger, offLevel);
+    } catch (Exception ignored) {
+      emailServiceLogger = null;
+      previousLogLevel = null;
+      logbackLoggerClass = null;
+      logbackLevelClass = null;
+    }
   }
 }

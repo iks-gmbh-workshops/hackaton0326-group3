@@ -7,12 +7,11 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 class SecurityConfigTest {
 
@@ -76,11 +75,9 @@ class SecurityConfigTest {
   void corsConfigurationSourceRegistersExpectedApiCorsRules() {
     SecurityConfig config = new SecurityConfig();
 
-    CorsConfigurationSource source = config.corsConfigurationSource();
-    CorsConfiguration apiConfig =
-        source.getCorsConfiguration(new MockHttpServletRequest("GET", "/api/groups"));
-    CorsConfiguration otherConfig =
-        source.getCorsConfiguration(new MockHttpServletRequest("GET", "/internal"));
+    UrlBasedCorsConfigurationSource source =
+        (UrlBasedCorsConfigurationSource) config.corsConfigurationSource();
+    CorsConfiguration apiConfig = source.getCorsConfigurations().get("/api/**");
 
     assertThat(apiConfig).isNotNull();
     assertThat(apiConfig.getAllowedOrigins())
@@ -89,6 +86,6 @@ class SecurityConfigTest {
         .containsExactly("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS");
     assertThat(apiConfig.getAllowedHeaders()).containsExactly("Authorization", "Content-Type", "Accept");
     assertThat(apiConfig.getExposedHeaders()).containsExactly("Location");
-    assertThat(otherConfig).isNull();
+    assertThat(source.getCorsConfigurations()).containsOnlyKeys("/api/**");
   }
 }
