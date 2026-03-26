@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 public class InvalidGroupMemberRequestException extends RuntimeException {
 
-    public InvalidGroupMemberRequestException(String message) {
-        super(message);
-    }
+  public InvalidGroupMemberRequestException(String message) {
+    super(message);
+  }
 }

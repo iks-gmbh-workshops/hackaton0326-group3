@@ -9,6 +9,4 @@ public record UserNotificationResponse(
     String message,
     boolean read,
     Instant createdAt,
-    String link
-) {
-}
+    String link) {}

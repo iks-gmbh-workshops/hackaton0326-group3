@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
 public class GroupCreationException extends RuntimeException {
 
-    public GroupCreationException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public GroupCreationException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

@@ -12,6 +12,4 @@ public record UserActivityResponse(
     String location,
     String attendanceStatus,
     Instant createdAt,
-    Instant updatedAt
-) {
-}
+    Instant updatedAt) {}
