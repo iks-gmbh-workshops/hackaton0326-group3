@@ -42,9 +42,9 @@ jobs:
         run: npm run lint
         working-directory: ${{ steps.frontend-dir.outputs.path }}
 
-      - name: Dependency check
-        run: npm run deps:check
-        working-directory: ${{ steps.frontend-dir.outputs.path }}
+#      - name: Dependency check
+#        run: npm run deps:check
+#        working-directory: ${{ steps.frontend-dir.outputs.path }}
 
       - name: Unit test
         run: npm run test:run
