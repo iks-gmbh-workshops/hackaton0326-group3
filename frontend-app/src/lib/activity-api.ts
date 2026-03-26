@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from "./api-client";
+
 export interface BackendActivity {
   id: string;
   groupId: string;
@@ -9,47 +11,15 @@ export interface BackendActivity {
   updatedAt: string;
 }
 
-class ActivityApiError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-function getBackendBaseUrl() {
-  return "/api/custom";
-}
-
-async function parseErrorMessage(response: Response) {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message || body.error || `Request failed with status ${response.status}`;
-  } catch {
-    return `Request failed with status ${response.status}`;
-  }
-}
+class ActivityApiError extends ApiRequestError {}
 
 async function request<T>(path: string, token: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getBackendBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...(init?.headers ?? {}),
-    },
+  return requestJson<T, ActivityApiError>({
+    path,
+    token,
+    init,
+    errorType: ActivityApiError,
   });
-
-  if (!response.ok) {
-    throw new ActivityApiError(response.status, await parseErrorMessage(response));
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
 }
 
 export async function listGroupActivities(token: string, groupId: string) {

@@ -1,3 +1,4 @@
+import { ApiRequestError, buildPath, requestJson } from "./api-client";
 import type { Notification } from "./types";
 
 export interface DirectoryUser {
@@ -6,44 +7,24 @@ export interface DirectoryUser {
   email: string;
 }
 
-class UserApiError extends Error {
-  status: number;
+class UserApiError extends ApiRequestError {}
 
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
+const defaultUserApiHeaders = {
+  Accept: "application/json",
+};
 
-function getBackendBaseUrl() {
-  return "/api/custom";
-}
-
-async function parseErrorMessage(response: Response) {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message || body.error || `Request failed with status ${response.status}`;
-  } catch {
-    return `Request failed with status ${response.status}`;
-  }
+function request<T>(token: string, path: string, init?: RequestInit) {
+  return requestJson<T, UserApiError>({
+    path,
+    token,
+    init,
+    errorType: UserApiError,
+    defaultHeaders: defaultUserApiHeaders,
+  });
 }
 
 export async function searchUsers(token: string, query: string) {
-  const response = await fetch(
-    `${getBackendBaseUrl()}/users?query=${encodeURIComponent(query)}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new UserApiError(response.status, await parseErrorMessage(response));
-  }
-
-  return (await response.json()) as DirectoryUser[];
+  return request<DirectoryUser[]>(token, buildPath("/users", { query }));
 }
 
 function normalizeNotificationType(type: string): Notification["type"] {
@@ -59,26 +40,17 @@ function normalizeNotificationType(type: string): Notification["type"] {
 }
 
 export async function listMyNotifications(token: string): Promise<Notification[]> {
-  const response = await fetch(`${getBackendBaseUrl()}/users/me/notifications`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    throw new UserApiError(response.status, await parseErrorMessage(response));
-  }
-
-  const body = (await response.json()) as Array<{
-    id: string;
-    type: string;
-    title: string;
-    message: string;
-    read: boolean;
-    createdAt: string;
-    link?: string | null;
-  }>;
+  const body = await request<
+    Array<{
+      id: string;
+      type: string;
+      title: string;
+      message: string;
+      read: boolean;
+      createdAt: string;
+      link?: string | null;
+    }>
+  >(token, "/users/me/notifications");
 
   return body.map((item) => ({
     id: item.id,
@@ -104,19 +76,9 @@ export interface UserActivity {
 }
 
 export async function listMyActivities(token: string): Promise<UserActivity[]> {
-  const response = await fetch(`${getBackendBaseUrl()}/users/me/activities`, {
+  return request<UserActivity[]>(token, "/users/me/activities", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
   });
-
-  if (!response.ok) {
-    throw new UserApiError(response.status, await parseErrorMessage(response));
-  }
-
-  return (await response.json()) as UserActivity[];
 }
 
 export async function updateOwnProfile(
@@ -125,33 +87,16 @@ export async function updateOwnProfile(
   lastName: string,
   email: string
 ) {
-  const response = await fetch(`${getBackendBaseUrl()}/users/me`, {
+  return request<void>(token, "/users/me", {
     method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
     body: JSON.stringify({ firstName, lastName, email }),
   });
-
-  if (!response.ok) {
-    throw new UserApiError(response.status, await parseErrorMessage(response));
-  }
 }
 
 export async function deleteOwnAccount(token: string) {
-  const response = await fetch(`${getBackendBaseUrl()}/users/me`, {
+  return request<void>(token, "/users/me", {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/json",
-    },
   });
-
-  if (!response.ok) {
-    throw new UserApiError(response.status, await parseErrorMessage(response));
-  }
 }
 
 export function isUserApiError(error: unknown): error is UserApiError {

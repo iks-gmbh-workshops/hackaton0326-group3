@@ -1,3 +1,5 @@
+import { ApiRequestError, requestJson } from "./api-client";
+
 export interface BackendGroup {
   id: string;
   name: string;
@@ -13,47 +15,15 @@ export interface GroupMember {
   email: string;
 }
 
-class GroupApiError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-function getBackendBaseUrl() {
-  return "/api/custom";
-}
-
-async function parseErrorMessage(response: Response) {
-  try {
-    const body = (await response.json()) as { message?: string; error?: string };
-    return body.message || body.error || `Request failed with status ${response.status}`;
-  } catch {
-    return `Request failed with status ${response.status}`;
-  }
-}
+class GroupApiError extends ApiRequestError {}
 
 async function request<T>(path: string, token: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${getBackendBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
-      ...(init?.headers ?? {}),
-    },
+  return requestJson<T, GroupApiError>({
+    path,
+    token,
+    init,
+    errorType: GroupApiError,
   });
-
-  if (!response.ok) {
-    throw new GroupApiError(response.status, await parseErrorMessage(response));
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
 }
 
 export async function listGroups(token: string) {

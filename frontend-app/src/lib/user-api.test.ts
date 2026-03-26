@@ -4,8 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   deleteOwnAccount,
   isUserApiError,
+  listMyActivities,
   listMyNotifications,
   searchUsers,
+  updateOwnProfile,
 } from "./user-api";
 
 const fetchMock = vi.fn<typeof fetch>();
@@ -174,6 +176,85 @@ describe("user-api", () => {
     await expect(deleteOwnAccount("token-denied")).rejects.toMatchObject({
       status: 403,
       message: "Denied",
+    });
+  });
+
+  it("lists own activities", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse([
+        {
+          id: "a1",
+          groupId: "g1",
+          title: "Trail Run",
+          description: null,
+          scheduledAt: "2026-04-01T10:00:00Z",
+          location: "Park",
+          attendanceStatus: "accepted",
+          createdAt: "2026-03-01T10:00:00Z",
+          updatedAt: "2026-03-02T10:00:00Z",
+        },
+      ])
+    );
+
+    const result = await listMyActivities("token-activities");
+
+    expect(result).toEqual([
+      {
+        id: "a1",
+        groupId: "g1",
+        title: "Trail Run",
+        description: null,
+        scheduledAt: "2026-04-01T10:00:00Z",
+        location: "Park",
+        attendanceStatus: "accepted",
+        createdAt: "2026-03-01T10:00:00Z",
+        updatedAt: "2026-03-02T10:00:00Z",
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledWith("/api/custom/users/me/activities", {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer token-activities",
+        Accept: "application/json",
+      },
+    });
+  });
+
+  it("throws from listMyActivities when backend responds with an error", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: "Activities unavailable" }, 500));
+
+    await expect(listMyActivities("token-activities")).rejects.toMatchObject({
+      status: 500,
+      message: "Activities unavailable",
+    });
+  });
+
+  it("updates own profile", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+
+    await updateOwnProfile("token-profile", "Jane", "Doe", "jane@example.com");
+
+    expect(fetchMock).toHaveBeenCalledWith("/api/custom/users/me", {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer token-profile",
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        firstName: "Jane",
+        lastName: "Doe",
+        email: "jane@example.com",
+      }),
+    });
+  });
+
+  it("throws from updateOwnProfile when error body is invalid JSON", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("bad", { status: 500 }));
+
+    await expect(updateOwnProfile("token", "A", "B", "x@example.com")).rejects.toMatchObject({
+      status: 500,
+      message: "Request failed with status 500",
     });
   });
 });

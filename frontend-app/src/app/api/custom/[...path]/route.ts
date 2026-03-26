@@ -148,22 +148,12 @@ async function handleRequest(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function GET(request: NextRequest, context: RouteContext) {
-  return handleRequest(request, context);
-}
+type RouteHandler = (request: NextRequest, context: RouteContext) => Promise<NextResponse>;
 
-export async function POST(request: NextRequest, context: RouteContext) {
-  return handleRequest(request, context);
-}
+const handleProxyRequest: RouteHandler = (request, context) => handleRequest(request, context);
 
-export async function PUT(request: NextRequest, context: RouteContext) {
-  return handleRequest(request, context);
-}
-
-export async function PATCH(request: NextRequest, context: RouteContext) {
-  return handleRequest(request, context);
-}
-
-export async function DELETE(request: NextRequest, context: RouteContext) {
-  return handleRequest(request, context);
-}
+export const GET = handleProxyRequest;
+export const POST = handleProxyRequest;
+export const PUT = handleProxyRequest;
+export const PATCH = handleProxyRequest;
+export const DELETE = handleProxyRequest;
