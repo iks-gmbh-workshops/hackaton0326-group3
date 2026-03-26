@@ -2,12 +2,14 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import {
   getActivity,
   isActivityApiError,
   listAttendees,
   respondToActivity,
+  deleteActivity,
   type BackendActivity,
   type BackendAttendance,
 } from "@/lib/activity-api";
@@ -15,7 +17,7 @@ import { getGroup, type BackendGroup } from "@/lib/group-api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   ArrowLeft,
   CalendarDays,
@@ -26,6 +28,8 @@ import {
   XCircle,
   HelpCircle,
   Users,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 export default function ActivityDetailPage({
@@ -34,6 +38,7 @@ export default function ActivityDetailPage({
   params: Promise<{ id: string; activityId: string }>;
 }) {
   const { id: groupId, activityId } = use(params);
+  const router = useRouter();
   const { user, isLoggedIn, isLoading, accessToken } = useAuth();
   const [activity, setActivity] = useState<BackendActivity | null>(null);
   const [group, setGroup] = useState<BackendGroup | null>(null);
@@ -42,6 +47,7 @@ export default function ActivityDetailPage({
   const [notFound, setNotFound] = useState(false);
   const [rsvpLoading, setRsvpLoading] = useState(false);
   const [rsvpError, setRsvpError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadAttendees = useCallback(async () => {
     if (!accessToken) return;
@@ -119,6 +125,26 @@ export default function ActivityDetailPage({
     } finally {
       setRsvpLoading(false);
     }
+  };
+
+  const handleDelete = () => {
+    if (!confirm("Are you sure you want to delete this activity? This action cannot be undone.")) {
+      return;
+    }
+
+    void (async () => {
+      if (!accessToken) return;
+      setDeleting(true);
+      try {
+        await deleteActivity(accessToken, groupId, activityId);
+        router.push(`/groups/${groupId}`);
+      } catch (error) {
+        alert(
+          isActivityApiError(error) ? error.message : "Failed to delete activity."
+        );
+        setDeleting(false);
+      }
+    })();
   };
 
   if (isLoading) {
@@ -200,9 +226,31 @@ export default function ActivityDetailPage({
               <p className="mt-1 text-sm text-muted-foreground">{group.name}</p>
             )}
           </div>
-          <Badge variant="secondary" className="text-xs">
-            Activity
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs">
+              Activity
+            </Badge>
+            {group && user?.id === group.ownerId && !isPast && (
+              <>
+                <Link
+                  href={`/groups/${groupId}/activities/${activityId}/edit`}
+                  className={buttonVariants({ variant: "outline", size: "sm" })}
+                >
+                  <Pencil className="mr-1 size-4" />
+                  Edit
+                </Link>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={deleting}
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="mr-1 size-4" />
+                  {deleting ? "Deleting..." : "Delete"}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
