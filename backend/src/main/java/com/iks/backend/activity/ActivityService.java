@@ -234,6 +234,26 @@ public class ActivityService {
         return attendanceRepository.findByActivityId(activityId);
     }
 
+    public record ActivityWithStatus(Activity activity, String attendanceStatus) {}
+
+    @Transactional(readOnly = true)
+    public List<ActivityWithStatus> listMyAcceptedActivities() {
+        String currentUserId = getCurrentUserId();
+        List<ActivityAttendance> acceptedAttendances = attendanceRepository.findAcceptedByUserId(currentUserId);
+        
+        List<String> activityIds = acceptedAttendances.stream()
+            .map(ActivityAttendance::getActivityId)
+            .toList();
+        
+        List<Activity> activities = activityRepository.findAllById(activityIds);
+        
+        return acceptedAttendances.stream()
+            .flatMap(attendance -> activities.stream()
+                .filter(activity -> activity.getId().equals(attendance.getActivityId()))
+                .map(activity -> new ActivityWithStatus(activity, attendance.getStatus().name())))
+            .toList();
+    }
+
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {

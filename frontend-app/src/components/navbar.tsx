@@ -44,6 +44,9 @@ export function Navbar() {
               <Link href="/dashboard" className={buttonVariants({ variant: "ghost", size: "sm" })}>
                 Dashboard
               </Link>
+              <Link href="/activities" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+                Activities
+              </Link>
               <Link href="/groups/new" className={buttonVariants({ variant: "ghost", size: "sm" })}>
                 New Group
               </Link>
@@ -156,6 +159,13 @@ export function Navbar() {
                 onClick={() => setMobileOpen(false)}
               >
                 Dashboard
+              </Link>
+              <Link
+                href="/activities"
+                className="rounded-md px-3 py-2 text-sm hover:bg-muted"
+                onClick={() => setMobileOpen(false)}
+              >
+                Activities
               </Link>
               <Link
                 href="/groups/new"

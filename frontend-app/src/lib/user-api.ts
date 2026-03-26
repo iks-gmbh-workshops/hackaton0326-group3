@@ -91,6 +91,34 @@ export async function listMyNotifications(token: string): Promise<Notification[]
   }));
 }
 
+export interface UserActivity {
+  id: string;
+  groupId: string;
+  title: string;
+  description: string | null;
+  scheduledAt: string;
+  location: string | null;
+  attendanceStatus: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listMyActivities(token: string): Promise<UserActivity[]> {
+  const response = await fetch(`${getBackendBaseUrl()}/users/me/activities`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    throw new UserApiError(response.status, await parseErrorMessage(response));
+  }
+
+  return (await response.json()) as UserActivity[];
+}
+
 export async function updateOwnProfile(
   token: string,
   firstName: string,

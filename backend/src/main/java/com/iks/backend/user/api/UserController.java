@@ -2,6 +2,8 @@ package com.iks.backend.user.api;
 
 import java.util.List;
 
+import com.iks.backend.activity.ActivityService;
+import com.iks.backend.activity.persistence.Activity;
 import com.iks.backend.user.UserLookupResult;
 import com.iks.backend.user.UserNotification;
 import com.iks.backend.user.UserService;
@@ -21,9 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+    private final ActivityService activityService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, ActivityService activityService) {
         this.userService = userService;
+        this.activityService = activityService;
     }
 
     @GetMapping
@@ -41,6 +45,13 @@ public class UserController {
     public List<UserNotificationResponse> listMyNotifications() {
         return userService.listMyUnreadNotificationsAndMarkRead().stream()
             .map(UserController::toNotificationResponse)
+            .toList();
+    }
+
+    @GetMapping("/me/activities")
+    public List<UserActivityResponse> listMyActivities() {
+        return activityService.listMyAcceptedActivities().stream()
+            .map(activityWithStatus -> toUserActivityResponse(activityWithStatus.activity(), activityWithStatus.attendanceStatus()))
             .toList();
     }
 
@@ -83,6 +94,20 @@ public class UserController {
             notification.isRead(),
             notification.getCreatedAt(),
             notification.getLink()
+        );
+    }
+
+    private static UserActivityResponse toUserActivityResponse(Activity activity, String attendanceStatus) {
+        return new UserActivityResponse(
+            activity.getId(),
+            activity.getGroupId(),
+            activity.getTitle(),
+            activity.getDescription(),
+            activity.getScheduledAt(),
+            activity.getLocation(),
+            attendanceStatus,
+            activity.getCreatedAt(),
+            activity.getUpdatedAt()
         );
     }
 
