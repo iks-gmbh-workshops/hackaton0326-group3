@@ -93,5 +93,5 @@ jobs:
         working-directory: ${{ steps.backend-dir.outputs.path }}
 
       - name: Security test
-        run: ./mvnw -B -ntp org.owasp:dependency-check-maven:check
+        run: ./mvnw -B -ntp spotbugs:check
         working-directory: ${{ steps.backend-dir.outputs.path }}
