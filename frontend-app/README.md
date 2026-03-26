@@ -1,24 +1,30 @@
-This is the Drumdibum frontend built with [Next.js](https://nextjs.org).
+# Drumdibum Frontend
 
-## Getting Started
+Frontend application for Drumdibum, built with Next.js App Router and Keycloak authentication.
+The app communicates with the backend through the local proxy route `/api/custom/*`.
 
-Install dependencies:
+## Features
+
+- Keycloak login/logout with OIDC + PKCE
+- Dashboard, profile, groups, activities, invite flow
+- Central auth context with token refresh handling
+- BFF-style API forwarding in `src/app/api/custom/[...path]/route.ts`
+
+## Prerequisites
+
+- Node.js 20+
+- npm 10+
+- Running backend API and Keycloak instance
+
+## Setup
+
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-Start the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Keycloak Configuration
-
-The frontend uses `keycloak-js` and expects these public environment variables:
+2. Configure environment variables (for example in `.env.local`):
 
 ```bash
 NEXT_PUBLIC_KEYCLOAK_URL=http://localhost:8080
@@ -27,30 +33,46 @@ NEXT_PUBLIC_KEYCLOAK_CLIENT_ID=drumdibum-frontend
 NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
 ```
 
-If these are not set, the defaults above are used.
+3. Start the frontend:
 
-With the repository's `docker-compose.yml` and `keycloak/drumdibum-realm.yml`, the matching Keycloak client is already defined:
+```bash
+npm run dev
+```
 
-- Realm: `drumdibum`
-- Public client: `drumdibum-frontend`
-- Redirect URI: `http://localhost:3000/*`
+4. Open <http://localhost:3000>.
 
-Run from the repository root to start Keycloak + Postgres:
+## Useful Scripts
+
+- `npm run dev`: start local development server
+- `npm run build`: production build
+- `npm run start`: run production build locally
+- `npm run lint`: run ESLint
+- `npm run test:run`: run tests once
+- `npm run test:coverage`: run tests with coverage
+- `npm run deps:audit`: run npm vulnerability audit
+- `npm run deps:outdated`: check outdated dependencies
+- `npm run deps:check`: run audit + outdated checks
+
+## Full Local Stack
+
+From repository root (`../` relative to this folder), start dependent services:
 
 ```bash
 docker compose up -d
 ```
 
-Then start this frontend and use the Login button in the navbar.
+This repository includes Keycloak realm bootstrap config (`keycloak/drumdibum-realm.yml`) matching:
+- Realm: `drumdibum`
+- Client: `drumdibum-frontend`
+- Redirect URI: `http://localhost:3000/*`
 
-## Notes
+## Security and Dependency Hygiene
 
-- Auth state is initialized with Keycloak `check-sso`.
-- Login/logout are handled by Keycloak redirects.
-- Access token is available in `useAuth()` as `accessToken` for API calls.
+- Security reporting process: see [SECURITY.md](./SECURITY.md)
+- Auth tokens are stored in memory and refreshed regularly
+- Redirect URIs are sanitized to origin + pathname before Keycloak redirects
+- Dependency monitoring is automated via:
+  - `.github/dependabot.yml` (weekly updates)
+  - `.github/workflows/dependency-hygiene.yml` (weekly audit/outdated checks)
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Run `npm run deps:check` before releases or regularly during maintenance.

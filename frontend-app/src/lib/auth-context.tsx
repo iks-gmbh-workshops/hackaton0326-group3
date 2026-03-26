@@ -104,6 +104,20 @@ function mapUser(profile: KeycloakProfile | null, tokenParsed: Record<string, un
   };
 }
 
+function getSafeRedirectUri() {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+
+  const current = new URL(window.location.href);
+  return `${current.origin}${current.pathname}`;
+}
+
+function hasExpiredToken(tokenParsed: Record<string, unknown>) {
+  const exp = tokenParsed.exp;
+  return typeof exp !== "number" || exp <= Math.floor(Date.now() / 1000);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -119,13 +133,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     let cancelled = false;
     let refreshInterval: number | undefined;
+    const clearSessionState = () => {
+      setUser(null);
+      setNotifications([]);
+      setAccessToken(null);
+    };
 
     const syncAuthenticatedUser = async () => {
       if (!keycloak.authenticated || !keycloak.tokenParsed) {
         if (!cancelled) {
-          setUser(null);
-          setNotifications([]);
-          setAccessToken(null);
+          clearSessionState();
+        }
+        return;
+      }
+
+      if (hasExpiredToken(keycloak.tokenParsed)) {
+        keycloak.clearToken();
+        if (!cancelled) {
+          clearSessionState();
         }
         return;
       }
@@ -167,9 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch {
         keycloak.clearToken();
         if (!cancelled) {
-          setUser(null);
-          setNotifications([]);
-          setAccessToken(null);
+          clearSessionState();
         }
       }
     };
@@ -183,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             checkLoginIframe: false,
             silentCheckSsoFallback: false,
             scope: "openid profile email roles",
-            redirectUri: window.location.href,
+            redirectUri: getSafeRedirectUri(),
           });
         }
 
@@ -197,11 +220,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setAccessToken(keycloak.token ?? null);
           }
         };
+        keycloak.onAuthError = () => {
+          keycloak.clearToken();
+          if (!cancelled) {
+            clearSessionState();
+          }
+        };
+        keycloak.onAuthRefreshError = () => {
+          keycloak.clearToken();
+          if (!cancelled) {
+            clearSessionState();
+          }
+        };
         keycloak.onAuthLogout = () => {
           if (!cancelled) {
-            setUser(null);
-            setNotifications([]);
-            setAccessToken(null);
+            clearSessionState();
           }
         };
         keycloak.onTokenExpired = () => {
@@ -213,9 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, 60_000);
       } catch {
         if (!cancelled) {
-          setUser(null);
-          setNotifications([]);
-          setAccessToken(null);
+          clearSessionState();
         }
       } finally {
         if (!cancelled) {
@@ -230,6 +261,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       keycloak.onAuthSuccess = undefined;
       keycloak.onAuthRefreshSuccess = undefined;
+      keycloak.onAuthError = undefined;
+      keycloak.onAuthRefreshError = undefined;
       keycloak.onAuthLogout = undefined;
       keycloak.onTokenExpired = undefined;
       if (refreshInterval !== undefined) {
@@ -246,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     await keycloak.login({
       scope: "openid profile email roles",
-      redirectUri: window.location.href,
+      redirectUri: getSafeRedirectUri(),
     });
   };
 
@@ -259,9 +292,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    await keycloak.logout({
-      redirectUri: window.location.origin,
-    });
+    try {
+      await keycloak.logout({
+        redirectUri: window.location.origin,
+      });
+    } finally {
+      keycloak.clearToken();
+      setUser(null);
+      setNotifications([]);
+      setAccessToken(null);
+    }
   };
 
   const consumeNotification = (notificationId: string) => {

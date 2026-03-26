@@ -1,0 +1,34 @@
+name: Dependency Hygiene
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
+
+jobs:
+  dependency-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Security audit
+        run: npm run deps:audit
+
+      - name: Outdated dependency report
+        id: outdated
+        continue-on-error: true
+        run: npm run deps:outdated
+
+      - name: Add job summary for outdated dependencies
+        if: steps.outdated.outcome == 'failure'
+        run: echo "Outdated npm dependencies detected. See 'Outdated dependency report' logs." >> "$GITHUB_STEP_SUMMARY"
